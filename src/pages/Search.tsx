@@ -8,7 +8,7 @@ import { CategoryIcon } from '../components/CategoryIcons';
 import { useSelector } from 'react-redux';
 import { selectAllMenuItems, selectComboItems } from '../store/menuSlice';
 import type { RootState } from '../store/store';
-
+import MenuSkeleton from '../components/MenuSkeleton';
 
 export default function SearchPage() {
   const [searchParams] = useSearchParams();
@@ -17,6 +17,7 @@ export default function SearchPage() {
   const [activeCat, setActiveCat] = useState('all');
   const menuItems = useSelector(selectAllMenuItems);
   const comboItems = useSelector(selectComboItems);
+  const menuLoading = useSelector((state: RootState) => state.menu.loading);
 
   const categories = useSelector((state: RootState) => {
     const cats = new Set(state.menu.items.filter((i: any) => !i.isCombo).map((i: any) => i.category));
@@ -86,35 +87,25 @@ export default function SearchPage() {
         ))}
       </div>
 
-      {/* Results */}
-      {filteredItems.length === 0 && filteredCombos.length === 0 ? (
-        <div className="text-center" style={{ padding: '3rem 0', color: 'var(--typo-200)' }}>
+      {/* Loading Skeleton */}
+      {menuLoading ? (
+        <MenuSkeleton />
+      ) : (filteredItems.length === 0 && filteredCombos.length === 0) ? (
+        <div className="text-center" style={{ padding: '3rem 0', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🔍</div>
           <p style={{ fontSize: '0.9rem', fontWeight: 500 }}>No items found</p>
           <p style={{ fontSize: '0.75rem' }}>Try a different search term</p>
         </div>
       ) : (
         <div className="stack" style={{ paddingBottom: '1rem' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--typo-200)', marginBottom: '0.25rem' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
             {filteredItems.length + filteredCombos.length} items found
           </div>
           {filteredItems.map(item => (
             <MenuItemCard key={item.id} item={item} layout="list" />
           ))}
           {filteredCombos.map(combo => (
-            <div key={combo.id} className="menu-card" id={`combo-${combo.id}`}>
-              <img src={combo.image} alt={combo.name} className="menu-card-img" loading="lazy" />
-              <div className="menu-card-info">
-                <div>
-                  <span className="badge badge-primary" style={{ marginBottom: '0.25rem' }}>🎁 Combo</span>
-                  <div className="menu-card-name">{combo.name}</div>
-                  <div className="menu-card-desc">{combo.comboContents}</div>
-                </div>
-                <div className="menu-card-bottom">
-                  <span className="menu-card-price">₹{combo.price}</span>
-                </div>
-              </div>
-            </div>
+            <MenuItemCard key={combo.id} item={combo} layout="list" />
           ))}
         </div>
       )}

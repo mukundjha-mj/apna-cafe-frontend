@@ -12,6 +12,7 @@ import MenuItemCard from '../components/MenuItemCard';
 import ViewCartBar from '../components/ViewCartBar';
 import { CategoryIcon } from '../components/CategoryIcons';
 import CafeLogo from '../components/CafeLogo';
+import HomeSkeleton from '../components/HomeSkeleton';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -102,9 +103,11 @@ export default function Home() {
         />
       </div>
 
-      {/* Categories */}
-      {!menuLoading && (
+      {menuLoading ? (
+        <HomeSkeleton />
+      ) : (
         <>
+          {/* Categories */}
           <div className="home-section">
             <div className="section-header">
               <span className="section-title">Categories</span>

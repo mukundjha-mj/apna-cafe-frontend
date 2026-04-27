@@ -16,6 +16,8 @@ import Orders from './pages/Orders';
 import OrderStatus from './pages/OrderStatus';
 import Profile from './pages/Profile';
 import CafeDashboard from './pages/CafeDashboard';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 import AuthModal from './components/AuthModal';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -81,6 +83,10 @@ function AppContent() {
 
           {/* Cafe Dashboard */}
           <Route path="/cafe/dashboard" element={<CafeDashboard />} />
+
+          {/* Legal */}
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
