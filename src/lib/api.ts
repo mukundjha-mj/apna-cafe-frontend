@@ -33,8 +33,9 @@ export const fetchMenuItems = async (cafeId: string) => {
 export interface CreateOrderPayload {
   userId: string;
   cafeId: string;
-  type: 'DINE_IN' | 'PICKUP';
+  type: 'DINE_IN' | 'PICKUP' | 'TAKEAWAY' | 'DELIVERY';
   tableNumber?: string;
+  address?: string;
   paymentMethod: 'cash' | 'card';
   subtotal: number;
   deliveryFee: number;

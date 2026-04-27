@@ -1,41 +1,83 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Clock, Banknote, CreditCard, Utensils, ShoppingBag, Truck, Navigation, CheckCircle2 } from 'lucide-react';
 import type { RootState, AppDispatch } from '../store/store';
 import { clearCart } from '../store/cartSlice';
 import { placeOrder } from '../store/ordersSlice';
-import { ArrowLeft, MapPin, Clock, Banknote, CreditCard } from 'lucide-react';
+import { getCurrentPosition, reverseGeocode } from '../lib/geo';
+import { setAuthModalOpen } from '../store/authSlice';
 import OrderSuccessModal from '../components/OrderSuccessModal';
 
 export default function Checkout() {
-  const cartItems = useSelector((state: RootState) => state.cart.items);
-  const user = useSelector((state: RootState) => state.auth.user);
-  const cafeId = useSelector((state: RootState) => state.menu.cafeId);
-  const cafeName = useSelector((state: RootState) => state.menu.cafeName);
-  const placing = useSelector((state: RootState) => state.orders.placing);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
+
+  // Selectors
+  const cartItems = useSelector((state: RootState) => state.cart.items);
+  const user = useSelector((state: RootState) => state.auth.user);
+  const { cafeId, orderType } = useSelector((state: RootState) => state.menu);
+  const placing = useSelector((state: RootState) => state.orders.placing);
+
+  // State
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi'>('cash');
+  const [tableNumber, setTableNumber] = useState('');
+  const [address, setAddress] = useState('');
+  const [isLocating, setIsLocating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
 
+  // Totals
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const deliveryFee = 0;
-  const serviceFee = 0;
-  const discount = 0; // Removed discount logic as well if not needed, or keep it 0
-  const total = subtotal + deliveryFee + serviceFee + discount;
+  const deliveryFee = orderType === 'DELIVERY' ? 0 : 0; // Keeping fees 0 as per previous request
+  const total = subtotal + deliveryFee;
+
+  // Sync address from profile if exists
+  useEffect(() => {
+    // If we had address in profile, we'd set it here. 
+    // For now, we'll fetch via geolocation if it's DELIVERY and empty.
+  }, [user]);
+
+  const handleLocate = async () => {
+    setIsLocating(true);
+    try {
+      const pos = await getCurrentPosition();
+      const res = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+      if (res) {
+        setAddress(res.display_name);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Could not detect location. Please enter manually.');
+    } finally {
+      setIsLocating(false);
+    }
+  };
 
   const handlePlaceOrder = async () => {
-    if (!user || !cafeId) return;
+    if (!user) {
+      dispatch(setAuthModalOpen(true));
+      return;
+    }
+
+    if (!cafeId || !orderType) return;
+    
+    if (orderType === 'DELIVERY' && !address.trim()) {
+      alert('Please provide a delivery address');
+      return;
+    }
+
     const result = await dispatch(placeOrder({
       userId: user.id,
       cafeId,
-      type: 'PICKUP',
-      paymentMethod,
+      type: orderType as any,
+      tableNumber: orderType === 'DINE_IN' ? tableNumber : undefined,
+      address: orderType === 'DELIVERY' ? address : undefined,
+      paymentMethod: paymentMethod === 'upi' ? 'card' : paymentMethod, // mapping to backend types
       subtotal,
       deliveryFee,
-      serviceFee,
-      discount,
+      serviceFee: 0,
+      discount: 0,
       totalAmount: total,
       items: cartItems.map(item => ({
         menuItemId: item.id,
@@ -44,6 +86,7 @@ export default function Checkout() {
         size: item.size,
       })),
     }));
+
     if (placeOrder.fulfilled.match(result)) {
       setOrderId(result.payload.id);
       setShowSuccess(true);
@@ -57,65 +100,287 @@ export default function Checkout() {
 
   return (
     <div className="page animate-fade-in" id="checkout-page">
-      <div style={{ padding: '1rem 0 0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button className="page-header-icon" onClick={() => navigate(-1)} aria-label="Go back"><ArrowLeft size={20} /></button>
-          <h2 style={{ margin: 0 }}>Checkout</h2>
-        </div>
+      <div className="checkout-header">
+        <button className="page-header-icon" onClick={() => navigate(-1)}><ArrowLeft size={20} /></button>
+        <h2>Checkout</h2>
       </div>
-      <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius-lg)', padding: '1rem', marginBottom: '0.75rem', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--typo-200)' }}>Deliver to</span>
-          <button className="btn-ghost" style={{ color: 'var(--primary-300)', fontSize: '0.75rem', fontWeight: 600 }}>Change</button>
+
+      <div className="checkout-content">
+        {/* Order Type Header */}
+        <div className="order-type-badge">
+          {orderType === 'DINE_IN' && <><Utensils size={16} /> Dine In</>}
+          {orderType === 'TAKEAWAY' && <><ShoppingBag size={16} /> Takeaway</>}
+          {orderType === 'DELIVERY' && <><Truck size={16} /> Delivery</>}
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
-          <MapPin size={18} color="var(--primary-300)" style={{ marginTop: '0.15rem', flexShrink: 0 }} />
-          <div>
-            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Pickup from {cafeName || 'Cafe'}</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--typo-200)' }}>Your order will be ready for pickup</div>
+
+        {/* Dynamic Section Based on Type */}
+        {orderType === 'DINE_IN' && (
+          <div className="checkout-section">
+            <h4 className="section-label">Table Information</h4>
+            <div className="input-group">
+              <Utensils size={18} className="input-icon" />
+              <input 
+                type="text" 
+                placeholder="Table Number (Optional)" 
+                className="input"
+                value={tableNumber}
+                onChange={e => setTableNumber(e.target.value)}
+              />
+            </div>
+            <p className="helper-text">Or you can tell the staff when you arrive.</p>
+          </div>
+        )}
+
+        {orderType === 'TAKEAWAY' && (
+          <div className="checkout-section">
+            <h4 className="section-label">Pickup Details</h4>
+            <div className="info-card">
+              <Clock size={20} className="info-icon" />
+              <div>
+                <p className="info-title">Pickup Time</p>
+                <p className="info-desc">Ready in approx. 15-20 mins</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {orderType === 'DELIVERY' && (
+          <div className="checkout-section">
+            <h4 className="section-label">Delivery Address</h4>
+            <div className="address-box">
+              <textarea 
+                className="input" 
+                placeholder="Flat / House No, Street, Landmark..."
+                rows={3}
+                value={address}
+                onChange={e => setAddress(e.target.value)}
+              />
+              <button 
+                className="locate-btn" 
+                onClick={handleLocate}
+                disabled={isLocating}
+              >
+                {isLocating ? 'Locating...' : <><Navigation size={14} /> Detect My Location</>}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Methods */}
+        <div className="checkout-section">
+          <h4 className="section-label">Payment Method</h4>
+          <div className="payment-grid">
+            {orderType !== 'DELIVERY' && (
+              <button 
+                className={`payment-card ${paymentMethod === 'cash' ? 'active' : ''}`}
+                onClick={() => setPaymentMethod('cash')}
+              >
+                <Banknote size={20} />
+                <span>Pay at Counter</span>
+                {paymentMethod === 'cash' && <CheckCircle2 size={16} className="active-check" />}
+              </button>
+            )}
+            <button 
+              className={`payment-card ${paymentMethod === 'upi' ? 'active' : ''}`}
+              onClick={() => setPaymentMethod('upi')}
+            >
+              <CreditCard size={20} />
+              <span>Pay via App</span>
+              {paymentMethod === 'upi' && <CheckCircle2 size={16} className="active-check" />}
+            </button>
           </div>
         </div>
-      </div>
-      <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius-lg)', padding: '1rem', marginBottom: '0.75rem', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Clock size={18} color="var(--primary-300)" />
-          <div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--typo-200)' }}>Delivery</div>
-            <div style={{ fontWeight: 500, fontSize: '0.85rem' }}>Ready in approx. 20 mins</div>
+
+        {/* Order Summary */}
+        <div className="checkout-section">
+          <h4 className="section-label">Bill Details</h4>
+          <div className="bill-card">
+            <div className="bill-row">
+              <span>Item Total</span>
+              <span>₹{subtotal}</span>
+            </div>
+            {deliveryFee > 0 && (
+              <div className="bill-row">
+                <span>Delivery Fee</span>
+                <span>₹{deliveryFee}</span>
+              </div>
+            )}
+            <div className="bill-row total">
+              <span>To Pay</span>
+              <span>₹{total}</span>
+            </div>
           </div>
         </div>
+
+        <button 
+          className="btn-primary btn-full btn-lg place-order-btn"
+          onClick={handlePlaceOrder}
+          disabled={placing}
+        >
+          {placing ? 'Placing Order...' : `Place ${orderType === 'DELIVERY' ? 'Delivery' : 'Order'}`}
+        </button>
       </div>
-      <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius-lg)', padding: '1rem', marginBottom: '0.75rem', boxShadow: 'var(--shadow-sm)' }}>
-        <h4 style={{ fontSize: '0.9rem', marginBottom: '0.65rem' }}>Payment Method:</h4>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={() => setPaymentMethod('cash')} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-md)', border: paymentMethod === 'cash' ? '2px solid var(--primary-300)' : '1.5px solid var(--bg-200)', background: paymentMethod === 'cash' ? 'var(--primary-100)' : 'var(--bg-white)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: paymentMethod === 'cash' ? 600 : 400, color: paymentMethod === 'cash' ? 'var(--primary-300)' : 'var(--typo-300)' }}>
-            <Banknote size={16} /> Cash
-          </button>
-          <button onClick={() => setPaymentMethod('card')} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-md)', border: paymentMethod === 'card' ? '2px solid var(--primary-300)' : '1.5px solid var(--bg-200)', background: paymentMethod === 'card' ? 'var(--primary-100)' : 'var(--bg-white)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: paymentMethod === 'card' ? 600 : 400, color: paymentMethod === 'card' ? 'var(--primary-300)' : 'var(--typo-300)' }}>
-            <CreditCard size={16} /> Card
-          </button>
-        </div>
-      </div>
-      <div className="payment-summary" style={{ marginBottom: '1.25rem' }}>
-        <h4 style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>Payment summary</h4>
-        <div className="payment-row"><span>Subtotal</span><span>₹{subtotal}</span></div>
-        {discount > 0 && <div className="payment-row" style={{ color: 'var(--success)' }}><span>Discount</span><span>-{discount}</span></div>}
-        {deliveryFee > 0 && <div className="payment-row"><span>Delivery Fee</span><span>₹{deliveryFee}</span></div>}
-        {serviceFee > 0 && <div className="payment-row"><span>Service Fee</span><span>₹{serviceFee}</span></div>}
-        <div className="payment-row total"><span>Total</span><span style={{ color: 'var(--primary-300)' }}>₹{total}</span></div>
-      </div>
-      <button className="btn-primary btn-full btn-lg" onClick={handlePlaceOrder} disabled={placing} style={{ marginBottom: '1rem', opacity: placing ? 0.7 : 1, borderRadius: 'var(--radius-lg)' }}>
-        {placing ? 'Placing Order...' : 'Place order'}
-      </button>
-      {showSuccess && (
-        <OrderSuccessModal
-          onClose={() => { dispatch(clearCart()); setShowSuccess(false); navigate('/orders'); }}
-          onTrackOrder={() => { dispatch(clearCart()); setShowSuccess(false); navigate(`/order/${orderId}`); }}
-          estimatedTime="20mins"
-          deliverTo="Pickup"
-          amountPaid={total}
-        />
-      )}
+
+
+      <style>{`
+        #checkout-page {
+          background: var(--bg-dark);
+          min-height: 100vh;
+        }
+        .checkout-header {
+          padding: 1.5rem 1.25rem 1rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        .checkout-content {
+          padding: 0 1.25rem 2rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+        .order-type-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: var(--primary-glow);
+          color: var(--primary);
+          padding: 0.5rem 1rem;
+          border-radius: var(--radius-full);
+          font-size: 0.85rem;
+          font-weight: 700;
+          width: fit-content;
+          border: 1px solid rgba(186, 117, 23, 0.2);
+        }
+        .checkout-section {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+        .section-label {
+          font-size: 0.85rem;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          font-weight: 700;
+        }
+        .info-card {
+          background: var(--bg-card);
+          padding: 1rem;
+          border-radius: var(--radius-lg);
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .info-icon {
+          color: var(--primary);
+        }
+        .info-title {
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+        .info-desc {
+          font-size: 0.75rem;
+          color: var(--text-muted);
+        }
+        .address-box {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .locate-btn {
+          background: transparent;
+          color: var(--primary);
+          font-size: 0.75rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.5rem 0;
+          width: fit-content;
+        }
+        .payment-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+        .payment-card {
+          background: var(--bg-card);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          padding: 1.25rem 1rem;
+          border-radius: var(--radius-lg);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.75rem;
+          position: relative;
+          transition: all 0.3s;
+          color: var(--text-muted);
+        }
+        .payment-card.active {
+          border-color: var(--primary);
+          background: var(--primary-glow);
+          color: var(--primary);
+        }
+        .active-check {
+          position: absolute;
+          top: 0.75rem;
+          right: 0.75rem;
+        }
+        .payment-card span {
+          font-size: 0.85rem;
+          font-weight: 600;
+        }
+        .bill-card {
+          background: var(--bg-card);
+          padding: 1.25rem;
+          border-radius: var(--radius-lg);
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          border: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+        .bill-row {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.9rem;
+          color: var(--text-muted);
+        }
+        .bill-row.total {
+          margin-top: 0.5rem;
+          padding-top: 0.75rem;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          color: var(--text-cream);
+          font-weight: 800;
+          font-size: 1.1rem;
+        }
+        .place-order-btn {
+          margin-top: 1rem;
+          height: 56px;
+        }
+        .helper-text {
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          padding-left: 0.25rem;
+        }
+      `}</style>
+      <OrderSuccessModal
+        isOpen={showSuccess}
+        onClose={() => {
+          setShowSuccess(false);
+          dispatch(clearCart());
+          navigate('/');
+        }}
+        onTrackOrder={() => {
+          setShowSuccess(false);
+          dispatch(clearCart());
+          navigate(`/order/${orderId}`);
+        }}
+        orderId={orderId || ''}
+        amountPaid={total}
+        deliverTo={orderType === 'DELIVERY' ? address : (orderType === 'DINE_IN' ? `Table ${tableNumber}` : 'Cafe')}
+      />
     </div>
   );
 }

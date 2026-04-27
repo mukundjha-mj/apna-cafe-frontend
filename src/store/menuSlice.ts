@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import { fetchAllCafes, fetchMenuItems } from '../lib/api';
 
 // Image mapping: DB stores keys like "pizza", frontend maps to local assets
@@ -41,10 +41,13 @@ export interface MenuItem {
   isAvailable: boolean;
 }
 
+export type OrderType = 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
+
 interface MenuState {
   items: MenuItem[];
   cafeId: string | null;
   cafeName: string | null;
+  orderType: OrderType | null;
   loading: boolean;
   error: string | null;
 }
@@ -53,6 +56,7 @@ const initialState: MenuState = {
   items: [],
   cafeId: null,
   cafeName: null,
+  orderType: localStorage.getItem('orderType') as OrderType | null,
   loading: false,
   error: null,
 };
@@ -100,7 +104,17 @@ export const fetchMenu = createAsyncThunk('menu/fetchMenu', async () => {
 const menuSlice = createSlice({
   name: 'menu',
   initialState,
-  reducers: {},
+  reducers: {
+    setOrderType: (state, action: PayloadAction<OrderType>) => {
+      state.orderType = action.payload;
+      localStorage.setItem('orderType', action.payload);
+    },
+    toggleOrderType: (state) => {
+      const next = state.orderType === 'DELIVERY' ? 'DINE_IN' : 'DELIVERY';
+      state.orderType = next;
+      localStorage.setItem('orderType', next);
+    },
+  },
   extraReducers: (builder) => {
     builder.addCase(fetchMenu.pending, (state) => {
       state.loading = true;
@@ -142,5 +156,7 @@ export const selectCategories = (state: { menu: MenuState }) => {
   const cats = new Set(state.menu.items.filter(i => !i.isCombo).map(i => i.category));
   return ['all', ...Array.from(cats), 'combos'];
 };
+
+export const { setOrderType, toggleOrderType } = menuSlice.actions;
 
 export default menuSlice.reducer;

@@ -19,6 +19,7 @@ export interface Order {
   status: string;
   type: string;
   tableNumber?: string;
+  address?: string;
   totalAmount: number;
   orderItems: OrderItem[];
   cafe?: {

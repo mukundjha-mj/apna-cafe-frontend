@@ -38,7 +38,7 @@ export default function CafeLogo({ size = 'default' }: { size?: 'default' | 'lar
         <span style={{
           fontWeight: 800,
           fontSize,
-          color: 'var(--typo-500)',
+          color: 'inherit', /* Use parent color or explicit color */
           letterSpacing: '-0.3px',
           fontFamily: "'Poppins', sans-serif",
         }}>
@@ -46,7 +46,7 @@ export default function CafeLogo({ size = 'default' }: { size?: 'default' | 'lar
         </span>
         <span style={{
           fontSize: subSize,
-          color: 'var(--typo-200)',
+          color: 'rgba(255, 255, 255, 0.6)',
           fontWeight: 500,
           letterSpacing: '1.5px',
           textTransform: 'uppercase',

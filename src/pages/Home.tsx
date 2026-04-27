@@ -1,24 +1,34 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import type { RootState } from '../store/store';
-import { Heart, Bell } from 'lucide-react';
-import SearchBar from '../components/SearchBar';
+import { useDispatch, useSelector } from 'react-redux';
+import { Heart, MapPin } from 'lucide-react';
+import type { RootState, AppDispatch } from '../store/store';
+import { selectBestsellers, selectComboItems, toggleOrderType } from '../store/menuSlice';
+import ServiceSelectionModal from '../components/ServiceSelectionModal';
 import PromoBanner from '../components/PromoBanner';
+import SearchBar from '../components/SearchBar';
 import CategoryChip from '../components/CategoryChip';
 import MenuItemCard from '../components/MenuItemCard';
 import ViewCartBar from '../components/ViewCartBar';
-import CafeLogo from '../components/CafeLogo';
 import { CategoryIcon } from '../components/CategoryIcons';
-import { selectBestsellers, selectNewItems, selectComboItems } from '../store/menuSlice';
-import { useState } from 'react';
-
+import CafeLogo from '../components/CafeLogo';
 
 export default function Home() {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const [searchVal, setSearchVal] = useState('');
   const bestsellers = useSelector(selectBestsellers);
-  const newItems = useSelector(selectNewItems);
   const comboItems = useSelector(selectComboItems);
+  const { orderType } = useSelector((state: RootState) => state.menu);
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!orderType) {
+      const timer = setTimeout(() => setIsServiceModalOpen(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [orderType]);
+
   const menuLoading = useSelector((state: RootState) => state.menu.loading);
 
   const categories = useSelector((state: RootState) => {
@@ -27,15 +37,7 @@ export default function Home() {
   });
 
   const categoryLabels: Record<string, string> = {
-    all: 'All',
-    combos: 'Combos',
-    pizza: 'Pizza',
-    burgers: 'Burgers',
-    fries: 'Fries',
-    momos: 'Momos',
-    shakes: 'Shakes',
-    drinks: 'Drinks',
-    new: 'New Items',
+    all: 'All', combos: 'Combos', pizza: 'Pizza', burgers: 'Burgers', fries: 'Fries', momos: 'Momos', shakes: 'Shakes', drinks: 'Drinks', new: 'New Items',
   };
 
   const handleSearch = (val: string) => {
@@ -47,49 +49,63 @@ export default function Home() {
 
   return (
     <div className="page animate-fade-in" id="home-page">
-      {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '1rem 0 0.5rem',
-      }}>
-        <CafeLogo />
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            className="page-header-icon"
-            onClick={() => navigate('/favorites')}
-            aria-label="Favorites"
-          >
-            <Heart size={20} />
-          </button>
-          <button className="page-header-icon" aria-label="Notifications">
-            <Bell size={20} />
-          </button>
+      <ServiceSelectionModal 
+        isOpen={isServiceModalOpen} 
+        onClose={() => setIsServiceModalOpen(false)} 
+      />
+
+      {/* BK Header Style */}
+      <header className="bk-header">
+        <div className="bk-header-top">
+          <div className="bk-header-left">
+            <CafeLogo />
+          </div>
+          <div className="bk-header-right">
+            <Heart size={24} onClick={() => navigate('/favorites')} />
+          </div>
         </div>
+
+        <div className="bk-header-mid">
+          <div className="bk-service-toggle" onClick={() => dispatch(toggleOrderType())}>
+            <span className={orderType === 'DELIVERY' ? 'active' : ''}>DELIVERY</span>
+            <div className={`bk-toggle-switch ${orderType !== 'DELIVERY' ? 'right' : ''}`}>
+              <div className="bk-toggle-knob" />
+            </div>
+            <span className={orderType !== 'DELIVERY' ? 'active' : ''}>DINE-IN/TAKEAWAY</span>
+          </div>
+        </div>
+
+        {orderType === 'DELIVERY' && (
+          <div className="bk-location-bar" onClick={() => setIsServiceModalOpen(true)}>
+            <div className="bk-loc-left">
+              <MapPin size={20} />
+              <span className="bk-loc-label">DELIVER TO:</span>
+            </div>
+            <div className="bk-loc-input">
+              <span>Set Delivery Address...</span>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Promo Banner */}
+      <div style={{ marginTop: '1rem' }}>
+        <PromoBanner />
       </div>
 
-      {/* Search */}
-      <div style={{ margin: '0.5rem 0 1rem' }}>
+      {/* Search - Moving search below header as per common app designs */}
+      <div className="search-container" style={{ marginTop: '1rem' }}>
         <SearchBar
           value={searchVal}
           onChange={handleSearch}
-          placeholder="Would you like to eat something?"
+          placeholder="What would you like to enjoy today?"
         />
       </div>
-
-      {/* Promo Banner */}
-      <PromoBanner />
-
-      {/* Loading State */}
-      {menuLoading && (
-        <div className="text-center" style={{ padding: '2rem 0', color: 'var(--typo-200)' }}>
-          <p style={{ fontSize: '0.85rem' }}>Loading menu...</p>
-        </div>
-      )}
 
       {/* Categories */}
       {!menuLoading && (
         <>
-          <div style={{ margin: '1.25rem 0 0.75rem' }}>
+          <div className="home-section">
             <div className="section-header">
               <span className="section-title">Categories</span>
               <span className="section-link" onClick={() => navigate('/menu')}>See all</span>
@@ -107,12 +123,11 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Bestsellers */}
+          {/* Recommended */}
           {bestsellers.length > 0 && (
-            <div style={{ marginBottom: '1.25rem' }}>
+            <div className="home-section">
               <div className="section-header">
-                <span className="section-title">🔥 Bestsellers</span>
-                <span className="section-link" onClick={() => navigate('/menu')}>See all</span>
+                <span className="section-title">🌟 Recommended</span>
               </div>
               <div className="grid-2">
                 {bestsellers.slice(0, 4).map(item => (
@@ -122,72 +137,23 @@ export default function Home() {
             </div>
           )}
 
-          {/* New Items */}
-          {newItems.length > 0 && (
-            <div style={{ marginBottom: '1.25rem' }}>
-              <div className="section-header">
-                <span className="section-title">✨ New Arrivals</span>
-              </div>
-              <div className="grid-2">
-                {newItems.map(item => (
-                  <MenuItemCard key={item.id} item={item} layout="grid" />
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Combo Deals */}
           {comboItems.length > 0 && (
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div className="home-section">
               <div className="section-header">
                 <span className="section-title">🎁 Combo Deals</span>
                 <span className="section-link" onClick={() => navigate('/menu?cat=combos')}>See all</span>
               </div>
-              <div style={{
-                display: 'flex', gap: '0.75rem', overflowX: 'auto',
-                scrollbarWidth: 'none', msOverflowStyle: 'none',
-                paddingBottom: '0.5rem',
-              }}>
+              <div className="combos-scroll">
                 {comboItems.slice(0, 5).map(combo => (
-                  <div
-                    key={combo.id}
-                    className="card"
-                    style={{ minWidth: '200px', flex: '0 0 200px', cursor: 'pointer' }}
-                    onClick={() => navigate('/menu?cat=combos')}
-                  >
-                    <img
-                      src={combo.image}
-                      alt={combo.name}
-                      style={{ width: '100%', height: '110px', objectFit: 'cover' }}
-                      loading="lazy"
-                    />
-                    <div style={{ padding: '0.65rem' }}>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.15rem' }}>
-                        {combo.name}
-                      </div>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--typo-200)', marginBottom: '0.35rem' }}>
-                        {combo.comboContents}
-                      </div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--primary-300)' }}>
-                        ₹{combo.price}
-                      </div>
+                  <div key={combo.id} className="combo-card-alt" onClick={() => navigate('/menu?cat=combos')}>
+                    <img src={combo.image} alt={combo.name} loading="lazy" />
+                    <div className="combo-info">
+                      <div className="combo-name">{combo.name}</div>
+                      <div className="combo-contents">{combo.comboContents}</div>
+                      <div className="combo-price">₹{combo.price}</div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Popular Items */}
-          {bestsellers.length > 0 && (
-            <div style={{ marginBottom: '1rem' }}>
-              <div className="section-header">
-                <span className="section-title">Popular Items</span>
-                <span className="section-link" onClick={() => navigate('/menu')}>See all</span>
-              </div>
-              <div className="stack">
-                {bestsellers.map(item => (
-                  <MenuItemCard key={item.id} item={item} layout="list" />
                 ))}
               </div>
             </div>
@@ -196,6 +162,168 @@ export default function Home() {
       )}
 
       <ViewCartBar />
+
+      <style>{`
+        .bk-header {
+          background: #120A06; /* Even darker espresso */
+          padding: 1rem 1rem 1.25rem;
+          margin: 0 -1.25rem 0; /* Removed negative top margin */
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        .bk-header-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .bk-header-left {
+          display: flex;
+          align-items: center;
+        }
+        .bk-header-right {
+          color: #BA7517;
+          display: flex;
+          align-items: center;
+        }
+        .bk-header-mid {
+          display: flex;
+          justify-content: center;
+          padding: 0.5rem 0;
+        }
+        .bk-service-toggle {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          font-weight: 900;
+          font-size: 0.9rem;
+          cursor: pointer;
+          user-select: none;
+        }
+        .bk-service-toggle span {
+          color: rgba(186, 117, 23, 0.2);
+          transition: all 0.3s;
+          letter-spacing: 0.2px;
+          white-space: nowrap;
+        }
+        .bk-service-toggle span.active {
+          color: #BA7517;
+          font-weight: 900;
+        }
+        .bk-toggle-switch {
+          width: 48px;
+          height: 24px;
+          background: rgba(0, 0, 0, 0.4);
+          border-radius: 12px;
+          position: relative;
+          transition: background 0.3s;
+          border: 1px solid rgba(186, 117, 23, 0.1);
+          flex-shrink: 0;
+        }
+        .bk-toggle-knob {
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          width: 18px;
+          height: 18px;
+          background: #BA7517;
+          border-radius: 50%;
+          transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        .bk-toggle-switch.right .bk-toggle-knob {
+          transform: translateX(24px);
+        }
+        .bk-location-bar {
+          background: rgba(255, 255, 255, 0.03);
+          border-radius: 10px;
+          padding: 0.75rem 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          cursor: pointer;
+          border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+        .bk-loc-left {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #BA7517;
+          white-space: nowrap;
+        }
+        .bk-loc-label {
+          font-weight: 900;
+          font-size: 0.65rem;
+          letter-spacing: 0.5px;
+        }
+        .bk-loc-input {
+          flex: 1;
+          color: rgba(245, 235, 224, 0.5); /* Faded cream */
+          font-size: 0.8rem;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        
+        /* Reset search container margins if needed */
+        .search-container {
+          margin-bottom: 1.5rem;
+        }
+        .home-section {
+          margin-bottom: 2rem;
+        }
+
+        .combos-scroll {
+          display: flex;
+          gap: 1rem;
+          overflow-x: auto;
+          scrollbar-width: none;
+          padding: 0.5rem 0 1.5rem;
+        }
+        .combos-scroll::-webkit-scrollbar {
+          display: none;
+        }
+        .combo-card-alt {
+          min-width: 220px;
+          flex: 0 0 220px;
+          background: var(--bg-card);
+          border-radius: var(--radius-lg);
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          transition: all 0.3s;
+        }
+        .combo-card-alt:hover {
+          transform: translateY(-4px);
+          border-color: var(--primary);
+        }
+        .combo-card-alt img {
+          width: 100%;
+          height: 120px;
+          object-fit: cover;
+        }
+        .combo-info {
+          padding: 1rem;
+        }
+        .combo-name {
+          font-size: 0.9rem;
+          font-weight: 700;
+          color: var(--text-cream);
+          margin-bottom: 0.25rem;
+        }
+        .combo-contents {
+          font-size: 0.7rem;
+          color: var(--text-muted);
+          margin-bottom: 0.75rem;
+          line-height: 1.3;
+          height: 2.6em;
+          overflow: hidden;
+        }
+        .combo-price {
+          font-size: 1rem;
+          font-weight: 800;
+          color: var(--primary);
+        }
+      `}</style>
     </div>
   );
 }

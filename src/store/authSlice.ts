@@ -14,6 +14,7 @@ interface AuthState {
   loading: boolean;
   error: string | null;
   initialized: boolean; // whether we've checked the session
+  isAuthModalOpen: boolean;
 }
 
 const initialState: AuthState = {
@@ -22,6 +23,7 @@ const initialState: AuthState = {
   loading: false,
   error: null,
   initialized: false,
+  isAuthModalOpen: false,
 };
 
 // Check existing session on app load
@@ -127,6 +129,9 @@ const authSlice = createSlice({
         state.user = { ...state.user, ...action.payload };
       }
     },
+    setAuthModalOpen: (state, action: PayloadAction<boolean>) => {
+      state.isAuthModalOpen = action.payload;
+    },
   },
   extraReducers: (builder) => {
     // Init auth
@@ -184,5 +189,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setUser, updateProfile } = authSlice.actions;
+export const { clearError, setUser, updateProfile, setAuthModalOpen } = authSlice.actions;
 export default authSlice.reducer;
