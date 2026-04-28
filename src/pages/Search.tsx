@@ -1,13 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SearchBar from '../components/SearchBar';
 import CategoryChip from '../components/CategoryChip';
 import MenuItemCard from '../components/MenuItemCard';
 import ViewCartBar from '../components/ViewCartBar';
 import { CategoryIcon } from '../components/CategoryIcons';
-import { useSelector } from 'react-redux';
-import { selectAllMenuItems, selectComboItems } from '../store/menuSlice';
-import type { RootState } from '../store/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchMenu, selectAllMenuItems, selectComboItems } from '../store/menuSlice';
+import type { AppDispatch, RootState } from '../store/store';
 import MenuSkeleton from '../components/MenuSkeleton';
 
 export default function SearchPage() {
@@ -15,9 +15,15 @@ export default function SearchPage() {
   const initialQ = searchParams.get('q') || '';
   const [query, setQuery] = useState(initialQ);
   const [activeCat, setActiveCat] = useState('all');
+  
+  const dispatch = useDispatch<AppDispatch>();
   const menuItems = useSelector(selectAllMenuItems);
   const comboItems = useSelector(selectComboItems);
   const menuLoading = useSelector((state: RootState) => state.menu.loading);
+
+  useEffect(() => {
+    dispatch(fetchMenu());
+  }, [dispatch]);
 
   const categories = useSelector((state: RootState) => {
     const cats = new Set(state.menu.items.filter((i: any) => !i.isCombo).map((i: any) => i.category));
