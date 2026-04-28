@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { RootState } from '../store/store';
 import { Wallet as WalletIcon, Gift, Copy, Check, ChevronLeft, ArrowUpRight, ArrowDownLeft, Share2 } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL } from '../lib/api';
 
 interface Transaction {
   id: string;

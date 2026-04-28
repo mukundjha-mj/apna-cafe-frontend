@@ -10,8 +10,9 @@ export interface AddressResult {
 
 export async function reverseGeocode(lat: number, lon: number): Promise<AddressResult | null> {
   try {
+    const GEO_API_URL = import.meta.env.VITE_GEO_API_URL || 'https://nominatim.openstreetmap.org/reverse';
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
+      `${GEO_API_URL}?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
       {
         headers: {
           'Accept-Language': 'en-US,en;q=0.9',

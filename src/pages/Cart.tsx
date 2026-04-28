@@ -8,14 +8,20 @@ import MenuItemCard from '../components/MenuItemCard';
 
 const Cart = () => {
   const cartItems = useSelector((state: RootState) => state.cart.items);
+  const { orderType } = useSelector((state: RootState) => state.menu);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const bestsellers = useSelector(selectBestsellers);
 
+  const deliveryFeeBase = Number(import.meta.env.VITE_DELIVERY_FEE) || 30;
+  const serviceFeeBase = Number(import.meta.env.VITE_SERVICE_FEE) || 10;
+  const minSubtotal = Number(import.meta.env.VITE_MIN_SUBTOTAL_FOR_DISCOUNT) || 200;
+  const discountVal = Number(import.meta.env.VITE_ORDER_DISCOUNT) || 50;
+
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const deliveryFee = subtotal > 0 ? 30 : 0;
-  const serviceFee = subtotal > 0 ? 10 : 0;
-  const discount = subtotal >= 200 ? -50 : 0;
+  const deliveryFee = orderType === 'DELIVERY' && subtotal > 0 ? deliveryFeeBase : 0;
+  const serviceFee = orderType === 'DELIVERY' && subtotal > 0 ? serviceFeeBase : 0;
+  const discount = subtotal >= minSubtotal ? -discountVal : 0;
   const total = subtotal + deliveryFee + serviceFee + discount;
 
   const suggestions = bestsellers.filter(
@@ -87,8 +93,8 @@ const Cart = () => {
         <h4 style={{ marginBottom: '0.5rem', fontSize: '0.95rem' }}>Payment summary</h4>
         <div className="payment-row"><span>Subtotal</span><span>₹{subtotal}</span></div>
         {discount !== 0 && <div className="payment-row" style={{ color: 'var(--success)' }}><span>Discount</span><span>{discount}</span></div>}
-        <div className="payment-row"><span>Delivery Fee</span><span>₹{deliveryFee}</span></div>
-        <div className="payment-row"><span>Service Fee</span><span>₹{serviceFee}</span></div>
+        {orderType === 'DELIVERY' && <div className="payment-row"><span>Delivery Fee</span><span>₹{deliveryFee}</span></div>}
+        {orderType === 'DELIVERY' && <div className="payment-row"><span>Service Fee</span><span>₹{serviceFee}</span></div>}
         <div className="payment-row total"><span>Total</span><span style={{ color: 'var(--primary-300)' }}>₹{total}</span></div>
       </div>
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>

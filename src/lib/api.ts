@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+export const API_URL = import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
   baseURL: `${API_URL}/api`,
@@ -75,6 +75,12 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
 export const syncUserProfile = async (profileData: { id: string; name: string; email: string; phone?: string }) => {
   const { data } = await api.post('/profiles/sync', profileData);
   return data.data;
+};
+
+// ==================== AUTH ====================
+export const fetchUserRole = async (userId: string): Promise<{ role: 'ADMIN' | 'CUSTOMER' | 'UNKNOWN' }> => {
+  const { data } = await api.get(`/auth/role/${userId}`);
+  return data;
 };
 
 export default api;

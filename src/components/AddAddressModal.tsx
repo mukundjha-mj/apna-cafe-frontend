@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { X, Navigation, MapPin } from 'lucide-react';
-import { getCurrentPosition, reverseGeocode } from '../lib/geo';
+import { X, MapPin } from 'lucide-react';
 
 interface AddAddressModalProps {
   isOpen: boolean;
@@ -9,7 +8,6 @@ interface AddAddressModalProps {
 }
 
 export default function AddAddressModal({ isOpen, onClose, onSave }: AddAddressModalProps) {
-  const [isLocating, setIsLocating] = useState(false);
   const [locationName, setLocationName] = useState('Bariarpur, Munger');
   
   // Form fields

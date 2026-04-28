@@ -108,29 +108,47 @@ const menuSlice = createSlice({
   },
 });
 
-// Selectors
-export const selectAllMenuItems = (state: { menu: MenuState }) =>
-  state.menu.items.filter(i => !i.isCombo);
+import { createSelector } from '@reduxjs/toolkit';
 
-export const selectComboItems = (state: { menu: MenuState }) =>
-  state.menu.items.filter(i => i.isCombo);
+// Base selector
+const selectMenu = (state: { menu: MenuState }) => state.menu;
 
-export const selectBestsellers = (state: { menu: MenuState }) =>
-  state.menu.items.filter(i => i.isBestseller && !i.isCombo);
+export const selectAllMenuItems = createSelector(
+  [selectMenu],
+  (menu) => menu.items.filter(i => !i.isCombo)
+);
 
-export const selectNewItems = (state: { menu: MenuState }) =>
-  state.menu.items.filter(i => i.isNew && !i.isCombo);
+export const selectComboItems = createSelector(
+  [selectMenu],
+  (menu) => menu.items.filter(i => i.isCombo)
+);
 
-export const selectByCategory = (category: string) => (state: { menu: MenuState }) => {
-  if (category === 'all') return state.menu.items.filter(i => !i.isCombo);
-  if (category === 'combos') return state.menu.items.filter(i => i.isCombo);
-  return state.menu.items.filter(i => i.category === category && !i.isCombo);
-};
+export const selectBestsellers = createSelector(
+  [selectMenu],
+  (menu) => menu.items.filter(i => i.isBestseller && !i.isCombo)
+);
 
-export const selectCategories = (state: { menu: MenuState }) => {
-  const cats = new Set(state.menu.items.filter(i => !i.isCombo).map(i => i.category));
-  return ['all', ...Array.from(cats), 'combos'];
-};
+export const selectNewItems = createSelector(
+  [selectMenu],
+  (menu) => menu.items.filter(i => i.isNew && !i.isCombo)
+);
+
+export const selectByCategory = (category: string) => createSelector(
+  [selectMenu],
+  (menu) => {
+    if (category === 'all') return menu.items.filter(i => !i.isCombo);
+    if (category === 'combos') return menu.items.filter(i => i.isCombo);
+    return menu.items.filter(i => i.category === category && !i.isCombo);
+  }
+);
+
+export const selectCategories = createSelector(
+  [selectMenu],
+  (menu) => {
+    const cats = new Set(menu.items.filter(i => !i.isCombo).map(i => i.category));
+    return ['all', ...Array.from(cats), 'combos'];
+  }
+);
 
 export const { setOrderType, toggleOrderType } = menuSlice.actions;
 

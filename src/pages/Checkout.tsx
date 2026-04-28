@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Banknote, CreditCard, Utensils, ShoppingBag, Truck, Navigation, CheckCircle2, Wallet as WalletIcon } from 'lucide-react';
+import { ArrowLeft, Clock, Banknote, Utensils, ShoppingBag, Truck, CheckCircle2, Wallet as WalletIcon } from 'lucide-react';
 import type { RootState, AppDispatch } from '../store/store';
 import { clearCart } from '../store/cartSlice';
 import { placeOrder } from '../store/ordersSlice';
-import { getCurrentPosition, reverseGeocode } from '../lib/geo';
 import { setAuthModalOpen } from '../store/authSlice';
 import OrderSuccessModal from '../components/OrderSuccessModal';
+import AddAddressModal from '../components/AddAddressModal';
+import { API_URL } from '../lib/api';
 
 export default function Checkout() {
   const dispatch = useDispatch<AppDispatch>();
@@ -20,25 +21,28 @@ export default function Checkout() {
   const placing = useSelector((state: RootState) => state.orders.placing);
 
   // State
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi'>('cash');
   const [tableNumber, setTableNumber] = useState('');
-  const [address, setAddress] = useState('');
-  const [isLocating, setIsLocating] = useState(false);
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [useWallet, setUseWallet] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
 
+  const deliveryFeeBase = Number(import.meta.env.VITE_DELIVERY_FEE) || 30;
+  const serviceFeeBase = Number(import.meta.env.VITE_SERVICE_FEE) || 10;
+
   // Totals
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const deliveryFee = 0; 
-  const walletAmountToUse = useWallet ? Math.min(walletBalance, subtotal + deliveryFee) : 0;
-  const total = subtotal + deliveryFee - walletAmountToUse;
+  const deliveryFee = orderType === 'DELIVERY' && subtotal > 0 ? deliveryFeeBase : 0;
+  const serviceFee = orderType === 'DELIVERY' && subtotal > 0 ? serviceFeeBase : 0;
+  const walletAmountToUse = useWallet ? Math.min(walletBalance, subtotal + deliveryFee + serviceFee) : 0;
+  const total = subtotal + deliveryFee + serviceFee - walletAmountToUse;
 
   // Fetch wallet balance
   useEffect(() => {
     if (user?.id) {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       fetch(`${API_URL}/api/wallet/${user.id}`)
         .then(res => res.json())
         .then(data => {
@@ -50,25 +54,45 @@ export default function Checkout() {
     }
   }, [user]);
 
-  // Sync address from profile if exists
-  useEffect(() => {
-    // If we had address in profile, we'd set it here. 
-    // For now, we'll fetch via geolocation if it's DELIVERY and empty.
-  }, [user]);
-
-  const handleLocate = async () => {
-    setIsLocating(true);
+  const fetchAddresses = async () => {
+    if (!user?.id) return;
     try {
-      const pos = await getCurrentPosition();
-      const res = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
-      if (res) {
-        setAddress(res.display_name);
+      const res = await fetch(`${API_URL}/api/addresses/${user.id}`);
+      const data = await res.json();
+      if (data.success) {
+        setAddresses(data.data);
+        if (data.data.length > 0 && !selectedAddress) {
+          const defaultAddr = data.data.find((a: any) => a.isDefault) || data.data[0];
+          setSelectedAddress(defaultAddr);
+        }
       }
     } catch (err) {
-      console.error(err);
-      alert('Could not detect location. Please enter manually.');
-    } finally {
-      setIsLocating(false);
+      console.error('Failed to fetch addresses', err);
+    }
+  };
+
+  // Sync address from profile if exists
+  useEffect(() => {
+    if (orderType === 'DELIVERY') {
+      fetchAddresses();
+    }
+  }, [user, orderType]);
+
+  const handleSaveAddress = async (newAddr: any) => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch(`${API_URL}/api/addresses/${user.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAddr)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAddresses([...addresses, data.data]);
+        setSelectedAddress(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to save address', err);
     }
   };
 
@@ -80,7 +104,7 @@ export default function Checkout() {
 
     if (!cafeId || !orderType) return;
     
-    if (orderType === 'DELIVERY' && !address.trim()) {
+    if (orderType === 'DELIVERY' && !selectedAddress) {
       alert('Please provide a delivery address');
       return;
     }
@@ -90,11 +114,11 @@ export default function Checkout() {
       cafeId,
       type: orderType as any,
       tableNumber: orderType === 'DINE_IN' ? tableNumber : undefined,
-      address: orderType === 'DELIVERY' ? address : undefined,
-      paymentMethod: paymentMethod === 'upi' ? 'card' : paymentMethod, // mapping to backend types
+      address: orderType === 'DELIVERY' ? `${selectedAddress.type} - ${selectedAddress.address}` : undefined,
+      paymentMethod: 'cash',
       subtotal,
       deliveryFee,
-      serviceFee: 0,
+      serviceFee,
       discount: walletAmountToUse,
       totalAmount: total,
       items: cartItems.map(item => ({
@@ -111,13 +135,23 @@ export default function Checkout() {
     }
   };
 
+  useEffect(() => {
+    if (cartItems.length === 0 && !showSuccess) {
+      navigate('/cart', { replace: true });
+    }
+  }, [cartItems.length, showSuccess, navigate]);
+
   if (cartItems.length === 0 && !showSuccess) {
-    navigate('/cart');
     return null;
   }
 
   return (
     <div className="page animate-fade-in" id="checkout-page">
+      <AddAddressModal 
+        isOpen={isAddressModalOpen} 
+        onClose={() => setIsAddressModalOpen(false)}
+        onSave={handleSaveAddress}
+      />
       <div className="checkout-header">
         <button className="page-header-icon" onClick={() => navigate(-1)}><ArrowLeft size={20} /></button>
         <h2>Checkout</h2>
@@ -165,21 +199,44 @@ export default function Checkout() {
         {orderType === 'DELIVERY' && (
           <div className="checkout-section">
             <h4 className="section-label">Delivery Address</h4>
-            <div className="address-box">
-              <textarea 
-                className="input" 
-                placeholder="Flat / House No, Street, Landmark..."
-                rows={3}
-                value={address}
-                onChange={e => setAddress(e.target.value)}
-              />
-              <button 
-                className="locate-btn" 
-                onClick={handleLocate}
-                disabled={isLocating}
-              >
-                {isLocating ? 'Locating...' : <><Navigation size={14} /> Detect My Location</>}
-              </button>
+            <div className="address-box" style={{ background: 'transparent', padding: 0, border: 'none' }}>
+              {addresses.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <select 
+                    className="input" 
+                    value={selectedAddress?.id || ''} 
+                    onChange={e => {
+                      const addr = addresses.find(a => a.id === e.target.value);
+                      if (addr) setSelectedAddress(addr);
+                    }}
+                    style={{ padding: '1rem', background: 'var(--bg-card)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-cream)', borderRadius: 'var(--radius-md)', appearance: 'none' }}
+                  >
+                    {addresses.map(addr => (
+                      <option key={addr.id} value={addr.id}>
+                        {addr.type} - {addr.address}
+                      </option>
+                    ))}
+                  </select>
+                  <button 
+                    className="btn-outline" 
+                    onClick={() => setIsAddressModalOpen(true)}
+                    style={{ padding: '0.75rem', fontSize: '0.85rem' }}
+                  >
+                    + Add New Address
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-start', background: 'var(--bg-card)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No saved addresses found.</p>
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => setIsAddressModalOpen(true)}
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                  >
+                    Add Delivery Address
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -207,24 +264,19 @@ export default function Checkout() {
         <div className="checkout-section">
           <h4 className="section-label">Payment Method</h4>
           <div className="payment-grid">
-            {orderType !== 'DELIVERY' && (
-              <button 
-                className={`payment-card ${paymentMethod === 'cash' ? 'active' : ''}`}
-                onClick={() => setPaymentMethod('cash')}
-              >
+            {orderType !== 'DELIVERY' ? (
+              <button className="payment-card active">
                 <Banknote size={20} />
                 <span>Pay at Counter</span>
-                {paymentMethod === 'cash' && <CheckCircle2 size={16} className="active-check" />}
+                <CheckCircle2 size={16} className="active-check" />
+              </button>
+            ) : (
+              <button className="payment-card active">
+                <Banknote size={20} />
+                <span>Pay on Delivery</span>
+                <CheckCircle2 size={16} className="active-check" />
               </button>
             )}
-            <button 
-              className={`payment-card ${paymentMethod === 'upi' ? 'active' : ''}`}
-              onClick={() => setPaymentMethod('upi')}
-            >
-              <CreditCard size={20} />
-              <span>Pay via App</span>
-              {paymentMethod === 'upi' && <CheckCircle2 size={16} className="active-check" />}
-            </button>
           </div>
         </div>
 
@@ -240,6 +292,12 @@ export default function Checkout() {
               <div className="bill-row">
                 <span>Delivery Fee</span>
                 <span>₹{deliveryFee}</span>
+              </div>
+            )}
+            {serviceFee > 0 && (
+              <div className="bill-row">
+                <span>Service Fee</span>
+                <span>₹{serviceFee}</span>
               </div>
             )}
             {walletAmountToUse > 0 && (
@@ -477,7 +535,7 @@ export default function Checkout() {
         }}
         orderId={orderId || ''}
         amountPaid={total}
-        deliverTo={orderType === 'DELIVERY' ? address : (orderType === 'DINE_IN' ? `Table ${tableNumber}` : 'Cafe')}
+        deliverTo={orderType === 'DELIVERY' && selectedAddress ? `${selectedAddress.type} - ${selectedAddress.address}` : (orderType === 'DINE_IN' ? `Table ${tableNumber}` : 'Cafe')}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import type { RootState, AppDispatch } from '../store/store';
 import { fetchOrder, updateOrderInList } from '../store/ordersSlice';
 import { ArrowLeft, Clock, MapPin, CheckCircle } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { API_URL } from '../lib/api';
 
 const statusSteps = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED'];
 
@@ -38,7 +39,6 @@ export default function OrderStatus() {
   // Listen for real-time updates via Socket.IO
   useEffect(() => {
     if (!orderId) return;
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     const socket = io(API_URL);
     socket.on('connect', () => {
       socket.emit('join-order-room', orderId);

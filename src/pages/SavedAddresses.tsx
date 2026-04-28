@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { ArrowLeft, MapPin, Plus, Home, Briefcase, Navigation, Trash2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Plus, Home, Briefcase, Trash2 } from 'lucide-react';
 import AddAddressModal from '../components/AddAddressModal';
 import type { RootState } from '../store/store';
+import { API_URL } from '../lib/api';
 
 export default function SavedAddresses() {
   const navigate = useNavigate();
@@ -15,7 +16,6 @@ export default function SavedAddresses() {
   const fetchAddresses = async () => {
     if (!user?.id) return;
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const res = await fetch(`${API_URL}/api/addresses/${user.id}`);
       const data = await res.json();
       if (data.success) {
@@ -35,7 +35,6 @@ export default function SavedAddresses() {
   const handleSaveAddress = async (newAddress: any) => {
     if (!user?.id) return;
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const res = await fetch(`${API_URL}/api/addresses/${user.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,7 +52,6 @@ export default function SavedAddresses() {
   const handleDeleteAddress = async (id: string) => {
     if (!user?.id) return;
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const res = await fetch(`${API_URL}/api/addresses/${user.id}/${id}`, {
         method: 'DELETE'
       });

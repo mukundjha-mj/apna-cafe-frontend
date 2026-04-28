@@ -14,6 +14,7 @@ import { CategoryIcon } from '../components/CategoryIcons';
 import CafeLogo from '../components/CafeLogo';
 import HomeSkeleton from '../components/HomeSkeleton';
 import AddAddressModal from '../components/AddAddressModal';
+import { API_URL } from '../lib/api';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -48,7 +49,6 @@ export default function Home() {
         }
 
         try {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
           const res = await fetch(`${API_URL}/api/addresses/${user.id}`);
           const data = await res.json();
           if (data.success && data.data.length > 0) {
@@ -68,7 +68,6 @@ export default function Home() {
   const handleSaveAddress = async (newAddr: any) => {
     if (!user?.id) return;
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const res = await fetch(`${API_URL}/api/addresses/${user.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

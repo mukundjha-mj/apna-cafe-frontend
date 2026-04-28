@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from './store/store';
 import { initAuth, setAuthModalOpen } from './store/authSlice';
@@ -15,6 +15,7 @@ import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import OrderStatus from './pages/OrderStatus';
 import Profile from './pages/Profile';
+import MyProfile from './pages/MyProfile';
 import Wallet from './pages/Wallet';
 import CafeDashboard from './pages/CafeDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -44,15 +45,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppContent() {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
-  const { initialized, isAuthModalOpen } = useSelector((state: RootState) => state.auth);
+  const { initialized, isAuthModalOpen, user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    if (initialized && isAuthenticated && user?.role === 'ADMIN' && !location.pathname.startsWith('/cafe')) {
+      // Admins should stay in the dashboard area
+      // navigate('/cafe/dashboard'); // Don't navigate here, just let the routes handle it
+    }
+  }, [initialized, isAuthenticated, user, location]);
 
   useEffect(() => {
     dispatch(initAuth());
     dispatch(fetchMenu());
   }, [dispatch]);
 
-  const hideNav = ['/cart', '/checkout', '/cafe/dashboard'].some(p => location.pathname.startsWith(p))
+  const hideNav = ['/cart', '/checkout', '/cafe/dashboard', '/my-profile'].some(p => location.pathname.startsWith(p))
     || location.pathname.startsWith('/order/');
 
   if (showSplash) {
@@ -63,13 +71,13 @@ function AppContent() {
 
   return (
     <div className="app-container">
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => dispatch(setAuthModalOpen(false))} 
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => dispatch(setAuthModalOpen(false))}
         onSuccess={() => dispatch(setAuthModalOpen(false))}
       />
       <ScrollToTop />
-      
+
       <main>
         <Routes>
           {/* Guest Friendly Routes */}
@@ -83,16 +91,21 @@ function AppContent() {
           <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
           <Route path="/order/:orderId" element={<ProtectedRoute><OrderStatus /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/my-profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
           <Route path="/saved-addresses" element={<ProtectedRoute><SavedAddresses /></ProtectedRoute>} />
           <Route path="/contact" element={<ProtectedRoute><Contact /></ProtectedRoute>} />
           <Route path="/help" element={<ProtectedRoute><HelpCenter /></ProtectedRoute>} />
-          
+
           {/* Checkout (has internal auth gate) */}
           <Route path="/checkout" element={<Checkout />} />
 
-          {/* Cafe Dashboard */}
-          <Route path="/cafe/dashboard" element={<CafeDashboard />} />
+          {/* Cafe Dashboard (Admin Only) */}
+          <Route path="/cafe/dashboard" element={
+            <ProtectedRoute>
+              {user?.role === 'ADMIN' ? <CafeDashboard /> : <Navigate to="/" replace />}
+            </ProtectedRoute>
+          } />
 
           {/* Legal */}
           <Route path="/privacy" element={<PrivacyPolicy />} />

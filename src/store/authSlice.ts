@@ -1,12 +1,13 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '../lib/supabaseClient';
-import { syncUserProfile } from '../lib/api';
+import { syncUserProfile, fetchUserRole } from '../lib/api';
 
 interface User {
   id: string;
   name: string;
   email: string;
   phone: string;
+  role: 'ADMIN' | 'CUSTOMER' | 'UNKNOWN';
 }
 
 interface AuthState {
@@ -32,18 +33,23 @@ export const initAuth = createAsyncThunk('auth/init', async () => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return null;
 
+  const { role } = await fetchUserRole(session.user.id);
+
   const userData = {
     id: session.user.id,
     name: session.user.user_metadata?.name || '',
     email: session.user.email || '',
     phone: session.user.user_metadata?.phone || '',
+    role,
   };
 
-  // Sync with PostgreSQL
-  try {
-    await syncUserProfile(userData);
-  } catch (err) {
-    console.error('Failed to sync profile:', err);
+  // Sync with PostgreSQL (Only if Customer)
+  if (role === 'CUSTOMER' || role === 'UNKNOWN') {
+    try {
+      await syncUserProfile(userData);
+    } catch (err) {
+      console.error('Failed to sync profile:', err);
+    }
   }
 
   return userData as User;
@@ -57,18 +63,23 @@ export const loginUser = createAsyncThunk(
     if (error) return rejectWithValue(error.message);
 
     const user = data.user;
+    const { role } = await fetchUserRole(user.id);
+
     const userData = {
       id: user.id,
       name: user.user_metadata?.name || '',
       email: user.email || '',
       phone: user.user_metadata?.phone || '',
+      role,
     };
 
     // Sync with PostgreSQL
-    try {
-      await syncUserProfile(userData);
-    } catch (err) {
-      console.error('Failed to sync profile during login:', err);
+    if (role === 'CUSTOMER' || role === 'UNKNOWN') {
+      try {
+        await syncUserProfile(userData);
+      } catch (err) {
+        console.error('Failed to sync profile during login:', err);
+      }
     }
 
     return userData as User;
@@ -97,6 +108,7 @@ export const signupUser = createAsyncThunk(
       name,
       email: data.user.email || email,
       phone,
+      role: 'CUSTOMER' as const,
     };
 
     // Sync with PostgreSQL

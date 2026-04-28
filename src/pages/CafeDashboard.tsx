@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { fetchOrdersByCafe, updateOrderStatusApi } from '../lib/dashboardApi';
 import { Clock, CheckCircle, ChefHat, Package } from 'lucide-react';
+import { API_URL } from '../lib/api';
 
 interface OrderItem {
   id: string;
@@ -51,7 +52,6 @@ export default function CafeDashboard() {
 
   useEffect(() => {
     // Get cafe ID from API
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     fetch(`${API_URL}/api/cafe`)
       .then(r => r.json())
       .then(data => {

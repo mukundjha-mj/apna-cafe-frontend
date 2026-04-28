@@ -36,6 +36,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     } else {
       if (!email.trim() || !password.trim() || !name.trim() || !phone.trim()) 
         return setLocalError('All fields are required');
+      
+      const cleanPhone = phone.startsWith('+91') ? phone.slice(3) : phone;
+      if (cleanPhone.length !== 10) {
+        return setLocalError('Phone number must be exactly 10 digits');
+      }
+
       const res = await dispatch(signupUser({ email, password, name, phone }));
       if (signupUser.fulfilled.match(res)) onSuccess();
     }
@@ -88,10 +94,20 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               </div>
               <div className="input-group">
                 <Phone size={18} className="input-icon" />
-                <input 
-                  type="tel" placeholder="Phone Number" className="input" 
-                  value={phone} onChange={e => setPhone(e.target.value)}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-dark)', borderRadius: 'var(--radius-lg)', paddingLeft: '3.2rem', height: '48px' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', marginRight: '0.4rem' }}>+91</span>
+                  <input 
+                    type="tel" 
+                    placeholder="10-digit number" 
+                    className="input" 
+                    style={{ paddingLeft: 0, background: 'transparent', border: 'none' }}
+                    value={phone.startsWith('+91') ? phone.slice(3) : phone} 
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setPhone('+91' + val);
+                    }}
+                  />
+                </div>
               </div>
             </>
           )}
