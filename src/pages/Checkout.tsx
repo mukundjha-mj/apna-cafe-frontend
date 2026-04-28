@@ -102,7 +102,9 @@ export default function Checkout() {
       return;
     }
 
-    if (!cafeId || !orderType) return;
+    const finalCafeId = cafeId || (cartItems.length > 0 ? cartItems[0].cafeId : null);
+    
+    if (!finalCafeId || !orderType) return;
     
     if (orderType === 'DELIVERY' && !selectedAddress) {
       alert('Please provide a delivery address');
@@ -111,7 +113,7 @@ export default function Checkout() {
 
     const result = await dispatch(placeOrder({
       userId: user.id,
-      cafeId,
+      cafeId: finalCafeId,
       type: orderType as any,
       tableNumber: orderType === 'DINE_IN' ? tableNumber : undefined,
       address: orderType === 'DELIVERY' ? `${selectedAddress.type} - ${selectedAddress.address}` : undefined,
