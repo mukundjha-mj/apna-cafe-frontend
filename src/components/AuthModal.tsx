@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Mail, Lock, User as UserIcon, Phone, X, Eye, EyeOff } from 'lucide-react';
 import type { AppDispatch, RootState } from '../store/store';
-import { loginUser, signupUser, clearError, loginWithGoogle } from '../store/authSlice';
+import { loginUser, signupUser, verifySignupOtp, clearError, resetOtpState, loginWithGoogle } from '../store/authSlice';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -17,10 +17,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [showPwd, setShowPwd] = useState(false);
+  const [otp, setOtp] = useState('');
   const [localError, setLocalError] = useState('');
 
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const { loading, error, otpSentTo, pendingSignupData } = useSelector((state: RootState) => state.auth);
 
   if (!isOpen) return null;
 
@@ -43,7 +44,30 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       }
 
       const res = await dispatch(signupUser({ email, password, name, phone }));
-      if (signupUser.fulfilled.match(res)) onSuccess();
+      // We check if it fulfilled. It might transition to OTP step or login directly.
+      if (signupUser.fulfilled.match(res)) {
+        if (!res.payload.otpSent) onSuccess();
+      }
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLocalError('');
+    dispatch(clearError());
+
+    if (!otp.trim() || otp.length < 6) return setLocalError('Please enter a valid 6-digit OTP');
+    if (!otpSentTo || !pendingSignupData) return setLocalError('Missing signup data');
+
+    const res = await dispatch(verifySignupOtp({ 
+      email: otpSentTo, 
+      otp, 
+      name: pendingSignupData.name, 
+      phone: pendingSignupData.phone 
+    }));
+
+    if (verifySignupOtp.fulfilled.match(res)) {
+      onSuccess();
     }
   };
 
@@ -52,6 +76,50 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   };
 
   const displayError = localError || error;
+
+  if (otpSentTo) {
+    return (
+      <div className="modal-overlay" onClick={() => {}}>
+        <div className="modal-content auth-modal" onClick={e => e.stopPropagation()}>
+          <button className="modal-close" onClick={() => { dispatch(resetOtpState()); onClose(); }}><X size={20} /></button>
+          
+          <div className="auth-modal-header">
+            <h2>Verify Email</h2>
+            <p>We've sent a 6-digit code to <strong style={{color: 'var(--primary)'}}>{otpSentTo}</strong>. Please enter it below.</p>
+          </div>
+
+          {displayError && <div className="auth-error">{displayError}</div>}
+
+          <form onSubmit={handleVerifyOtp} className="auth-modal-form">
+            <div className="input-group">
+              <Lock size={18} className="input-icon" />
+              <input 
+                type="text" 
+                placeholder="6-Digit OTP Code" 
+                className="input" 
+                style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '1.2rem', fontWeight: 'bold' }}
+                value={otp} 
+                onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                maxLength={6}
+              />
+            </div>
+            
+            <button type="submit" className="btn-primary btn-full" disabled={loading || otp.length < 6}>
+              {loading ? 'Verifying...' : 'Verify & Complete Signup'}
+            </button>
+          </form>
+
+          <p className="auth-footer" style={{ textAlign: 'center' }}>
+            Wrong email or want to go back?{' '}
+            <span onClick={() => { dispatch(resetOtpState()); setOtp(''); }}>Back to Signup</span>
+          </p>
+        </div>
+        
+        {/* Same styles as below */}
+        <style>{/* Handled by the global style block below */}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -143,7 +211,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           <span>or continue with</span>
         </div>
 
-        <button className="social-btn google" onClick={handleGoogleLogin} style={{ marginBottom: '1.5rem' }}>
+        <button type="button" className="social-btn google" onClick={handleGoogleLogin} style={{ marginBottom: '1.5rem' }}>
           <svg width="20" height="20" viewBox="0 0 48 48">
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
             <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />

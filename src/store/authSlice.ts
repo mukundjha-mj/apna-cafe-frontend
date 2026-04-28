@@ -17,6 +17,8 @@ interface AuthState {
   error: string | null;
   initialized: boolean; // whether we've checked the session
   isAuthModalOpen: boolean;
+  otpSentTo: string | null;
+  pendingSignupData: { name: string; phone: string } | null;
 }
 
 const initialState: AuthState = {
@@ -26,6 +28,8 @@ const initialState: AuthState = {
   error: null,
   initialized: false,
   isAuthModalOpen: false,
+  otpSentTo: null,
+  pendingSignupData: null,
 };
 
 // Check existing session on app load
@@ -86,7 +90,7 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// Signup with email/password
+// Signup with email/password (Sends OTP if Email Confirmation is enabled in Supabase)
 export const signupUser = createAsyncThunk(
   'auth/signup',
   async (
@@ -103,6 +107,12 @@ export const signupUser = createAsyncThunk(
     if (error) return rejectWithValue(error.message);
     if (!data.user) return rejectWithValue('Signup failed');
 
+    // If session is null, Supabase requires email confirmation (OTP sent)
+    if (!data.session) {
+      return { otpSent: true, email, name, phone };
+    }
+
+    // Fallback: If confirmation is disabled, login directly
     const userData = {
       id: data.user.id,
       name,
@@ -111,11 +121,45 @@ export const signupUser = createAsyncThunk(
       role: 'CUSTOMER' as const,
     };
 
-    // Sync with PostgreSQL
     try {
       await syncUserProfile(userData);
     } catch (err) {
       console.error('Failed to sync profile during signup:', err);
+    }
+
+    return { otpSent: false, user: userData, email, name, phone };
+  }
+);
+
+// Verify Email OTP
+export const verifySignupOtp = createAsyncThunk(
+  'auth/verifySignupOtp',
+  async (
+    { email, otp, name, phone }: { email: string; otp: string; name: string; phone: string },
+    { rejectWithValue }
+  ) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token: otp,
+      type: 'signup',
+    });
+
+    if (error) return rejectWithValue(error.message);
+    if (!data.user || !data.session) return rejectWithValue('OTP Verification failed');
+
+    const userData = {
+      id: data.user.id,
+      name,
+      email: data.user.email || email,
+      phone,
+      role: 'CUSTOMER' as const,
+    };
+
+    // Sync with PostgreSQL now that email is verified
+    try {
+      await syncUserProfile(userData);
+    } catch (err) {
+      console.error('Failed to sync profile after OTP verification:', err);
     }
 
     return userData as User;
@@ -146,6 +190,11 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     clearError: (state) => {
+      state.error = null;
+    },
+    resetOtpState: (state) => {
+      state.otpSentTo = null;
+      state.pendingSignupData = null;
       state.error = null;
     },
     setUser: (state, action: PayloadAction<User>) => {
@@ -201,10 +250,35 @@ const authSlice = createSlice({
     });
     builder.addCase(signupUser.fulfilled, (state, action) => {
       state.loading = false;
-      state.isAuthenticated = true;
-      state.user = action.payload;
+      if (action.payload.otpSent) {
+        state.otpSentTo = action.payload.email;
+        state.pendingSignupData = {
+          name: action.payload.name,
+          phone: action.payload.phone
+        };
+      } else if (action.payload.user) {
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
+      }
     });
     builder.addCase(signupUser.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Verify OTP
+    builder.addCase(verifySignupOtp.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(verifySignupOtp.fulfilled, (state, action) => {
+      state.loading = false;
+      state.isAuthenticated = true;
+      state.user = action.payload;
+      state.otpSentTo = null;
+      state.pendingSignupData = null;
+    });
+    builder.addCase(verifySignupOtp.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload as string;
     });
@@ -217,5 +291,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setUser, updateProfile, setAuthModalOpen } = authSlice.actions;
+export const { clearError, resetOtpState, setUser, updateProfile, setAuthModalOpen } = authSlice.actions;
 export default authSlice.reducer;
