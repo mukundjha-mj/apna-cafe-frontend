@@ -13,6 +13,7 @@ interface OrderItem {
 
 interface Order {
   id: string;
+  orderNumber?: number;
   status: string;
   totalAmount: number;
   subtotal: number;
