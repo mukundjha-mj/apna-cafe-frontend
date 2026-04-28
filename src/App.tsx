@@ -28,6 +28,25 @@ const lazyWithRetry = (componentImport: () => Promise<any>) =>
     }
   });
 
+// Global handler for dynamic import failures (ChunkLoadError)
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    if (event.reason && (
+      event.reason.name === 'ChunkLoadError' || 
+      /Failed to fetch dynamically imported module/.test(event.reason.message)
+    )) {
+      const lastReload = window.sessionStorage.getItem('last-chunk-reload');
+      const now = Date.now();
+      
+      // Only reload if we haven't reloaded in the last 10 seconds (to avoid infinite loops)
+      if (!lastReload || now - parseInt(lastReload) > 10000) {
+        window.sessionStorage.setItem('last-chunk-reload', now.toString());
+        window.location.reload();
+      }
+    }
+  });
+}
+
 // Lazy load pages for better initial performance
 const Home = lazyWithRetry(() => import('./pages/Home'));
 const SearchPage = lazyWithRetry(() => import('./pages/Search'));
