@@ -83,10 +83,10 @@ export const loginUser = createAsyncThunk(
       role,
     };
 
-    // Block Admins from logging into customer app
+    // Block Admins from logging into customer app secretly
     if (role === 'ADMIN') {
       await supabase.auth.signOut();
-      return rejectWithValue('Admin accounts cannot login to the customer app. Please use the Admin Portal.');
+      return rejectWithValue('Invalid email or password.');
     }
 
     // Sync with PostgreSQL
