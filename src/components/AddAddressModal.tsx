@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, MapPin } from 'lucide-react';
 
 interface AddAddressModalProps {
@@ -41,9 +42,9 @@ export default function AddAddressModal({ isOpen, onClose, onSave }: AddAddressM
     onClose();
   };
 
-  return (
-    <div className="modal-overlay animate-fade-in" onClick={onClose} style={{ zIndex: 200 }}>
-      <div className="modal-content animate-slide-up" onClick={e => e.stopPropagation()} style={{ padding: 0, overflow: 'hidden', height: '90vh', display: 'flex', flexDirection: 'column' }}>
+  const modalMarkup = (
+    <div className="modal-overlay animate-fade-in" onClick={onClose} style={{ zIndex: 9999 }}>
+      <div className="modal-content animate-slide-up" onClick={e => e.stopPropagation()} style={{ padding: 0, overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
         
         {/* Modal Header */}
         <div style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-card)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -131,4 +132,6 @@ export default function AddAddressModal({ isOpen, onClose, onSave }: AddAddressM
       </div>
     </div>
   );
+
+  return createPortal(modalMarkup, document.body);
 }
