@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from '../store/store';
 import { fetchOrders } from '../store/ordersSlice';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, RotateCcw, Loader, ArrowRight, ShoppingBag } from 'lucide-react';
+import { RotateCcw, Loader, ArrowRight, ShoppingBag } from 'lucide-react';
 
 export default function Orders() {
   const dispatch = useDispatch<AppDispatch>();
