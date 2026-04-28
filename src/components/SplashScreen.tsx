@@ -20,8 +20,8 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
     const timer = setTimeout(() => {
       setIsVisible(false);
       sessionStorage.setItem('splash_shown', 'true');
-      setTimeout(onFinish, 500); // Wait for fade-out animation
-    }, 2000);
+      setTimeout(onFinish, 300); // Faster fade-out animation
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [onFinish]);
