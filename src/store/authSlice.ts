@@ -47,6 +47,12 @@ export const initAuth = createAsyncThunk('auth/init', async () => {
     role,
   };
 
+  // Block Admins from logging into customer app
+  if (role === 'ADMIN') {
+    await supabase.auth.signOut();
+    return null;
+  }
+
   // Sync with PostgreSQL (Only if Customer)
   if (role === 'CUSTOMER' || role === 'UNKNOWN') {
     try {
@@ -76,6 +82,12 @@ export const loginUser = createAsyncThunk(
       phone: user.user_metadata?.phone || '',
       role,
     };
+
+    // Block Admins from logging into customer app
+    if (role === 'ADMIN') {
+      await supabase.auth.signOut();
+      return rejectWithValue('Admin accounts cannot login to the customer app. Please use the Admin Portal.');
+    }
 
     // Sync with PostgreSQL
     if (role === 'CUSTOMER' || role === 'UNKNOWN') {
