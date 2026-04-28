@@ -44,37 +44,48 @@ const initialState: MenuState = {
 };
 
 // Fetch menu: first get the cafe, then its menu items
-export const fetchMenu = createAsyncThunk('menu/fetchMenu', async () => {
-  // Get the first cafe (single-cafe app)
-  const cafes = await fetchAllCafes();
-  if (!cafes || cafes.length === 0) {
-    throw new Error('No cafe found');
+export const fetchMenu = createAsyncThunk(
+  'menu/fetchMenu', 
+  async () => {
+    // Get the first cafe (single-cafe app)
+    const cafes = await fetchAllCafes();
+    if (!cafes || cafes.length === 0) {
+      throw new Error('No cafe found');
+    }
+    const cafe = cafes[0];
+
+    // Fetch menu items for this cafe
+    const rawItems = await fetchMenuItems(cafe.id);
+
+    // Map DB items to frontend shape
+    const items: MenuItem[] = rawItems.map((item: any) => ({
+      id: item.id,
+      cafeId: item.cafeId,
+      name: item.name,
+      description: item.description || '',
+      category: item.category,
+      price: item.price,
+      sizes: item.sizes || null,
+      imageUrl: item.imageUrl || '/assets/img-placeholder.svg',
+      isVeg: item.isVeg,
+      isNew: item.isNew || false,
+      isBestseller: item.isBestseller || false,
+      isCombo: item.isCombo || false,
+      comboContents: item.comboContents || null,
+      isAvailable: item.isAvailable,
+    }));
+
+    return { items, cafeId: cafe.id, cafeName: cafe.name };
+  },
+  {
+    condition: (_, { getState }) => {
+      const { menu } = getState() as { menu: MenuState };
+      if (menu.items.length > 0) {
+        return false; // Already have data, don't re-fetch
+      }
+    }
   }
-  const cafe = cafes[0];
-
-  // Fetch menu items for this cafe
-  const rawItems = await fetchMenuItems(cafe.id);
-
-  // Map DB items to frontend shape
-  const items: MenuItem[] = rawItems.map((item: any) => ({
-    id: item.id,
-    cafeId: item.cafeId,
-    name: item.name,
-    description: item.description || '',
-    category: item.category,
-    price: item.price,
-    sizes: item.sizes || null,
-    imageUrl: item.imageUrl || '/assets/img-placeholder.svg',
-    isVeg: item.isVeg,
-    isNew: item.isNew || false,
-    isBestseller: item.isBestseller || false,
-    isCombo: item.isCombo || false,
-    comboContents: item.comboContents || null,
-    isAvailable: item.isAvailable,
-  }));
-
-  return { items, cafeId: cafe.id, cafeName: cafe.name };
-});
+);
 
 const menuSlice = createSlice({
   name: 'menu',

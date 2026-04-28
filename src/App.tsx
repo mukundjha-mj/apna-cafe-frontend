@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from './store/store';
@@ -6,25 +6,34 @@ import { initAuth, setAuthModalOpen } from './store/authSlice';
 import { fetchMenu } from './store/menuSlice';
 import BottomNav from './components/BottomNav';
 import SplashScreen from './components/SplashScreen';
-import Home from './pages/Home';
-import SearchPage from './pages/Search';
-import Menu from './pages/Menu';
-import Favorites from './pages/Favorites';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import Orders from './pages/Orders';
-import OrderStatus from './pages/OrderStatus';
-import Profile from './pages/Profile';
-import MyProfile from './pages/MyProfile';
-import Wallet from './pages/Wallet';
-import CafeDashboard from './pages/CafeDashboard';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsOfService from './pages/TermsOfService';
-import SavedAddresses from './pages/SavedAddresses';
-import Contact from './pages/Contact';
-import HelpCenter from './pages/HelpCenter';
-import AuthModal from './components/AuthModal';
 import ScrollToTop from './components/ScrollToTop';
+
+// Lazy load pages for better initial performance
+const Home = lazy(() => import('./pages/Home'));
+const SearchPage = lazy(() => import('./pages/Search'));
+const Menu = lazy(() => import('./pages/Menu'));
+const Favorites = lazy(() => import('./pages/Favorites'));
+const Cart = lazy(() => import('./pages/Cart'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const Orders = lazy(() => import('./pages/Orders'));
+const OrderStatus = lazy(() => import('./pages/OrderStatus'));
+const Profile = lazy(() => import('./pages/Profile'));
+const MyProfile = lazy(() => import('./pages/MyProfile'));
+const Wallet = lazy(() => import('./pages/Wallet'));
+const CafeDashboard = lazy(() => import('./pages/CafeDashboard'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const SavedAddresses = lazy(() => import('./pages/SavedAddresses'));
+const Contact = lazy(() => import('./pages/Contact'));
+const HelpCenter = lazy(() => import('./pages/HelpCenter'));
+const AuthModal = lazy(() => import('./components/AuthModal'));
+
+// Loading component for Suspense
+const PageLoader = () => (
+  <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)' }}>
+    <div className="animate-pulse" style={{ color: 'var(--primary)', fontSize: '1.2rem', fontWeight: 600 }}>Loading...</div>
+  </div>
+);
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, initialized } = useSelector((state: RootState) => state.auth);
@@ -79,6 +88,7 @@ function AppContent() {
       <ScrollToTop />
 
       <main>
+      <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Guest Friendly Routes */}
           <Route path="/" element={<Home />} />
@@ -114,6 +124,7 @@ function AppContent() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+      </Suspense>
 
       </main>
       {!hideNav && <BottomNav />}
