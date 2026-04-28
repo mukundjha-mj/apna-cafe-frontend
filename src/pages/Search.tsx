@@ -81,17 +81,19 @@ export default function SearchPage() {
       </div>
 
       {/* Category Chips */}
-      <div className="categories-scroll" style={{ marginBottom: '1rem' }}>
-        {categories.map((cat: string) => (
-          <CategoryChip
-            key={cat}
-            icon={<CategoryIcon id={cat} />}
-            name={categoryLabels[cat] || (cat.charAt(0).toUpperCase() + cat.slice(1))}
-            active={activeCat === cat}
-            onClick={() => setActiveCat(cat)}
-          />
-        ))}
-      </div>
+      {!menuLoading && (
+        <div className="categories-scroll" style={{ marginBottom: '1rem' }}>
+          {categories.map((cat: string) => (
+            <CategoryChip
+              key={cat}
+              icon={<CategoryIcon id={cat} />}
+              name={categoryLabels[cat] || (cat.charAt(0).toUpperCase() + cat.slice(1))}
+              active={activeCat === cat}
+              onClick={() => setActiveCat(cat)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Loading Skeleton */}
       {menuLoading ? (

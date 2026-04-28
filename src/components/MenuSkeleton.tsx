@@ -1,14 +1,16 @@
 import Skeleton from './Skeleton';
 
-export default function MenuSkeleton() {
+export default function MenuSkeleton({ hideCategories = false }: { hideCategories?: boolean }) {
   return (
     <div className="animate-fade-in" style={{ padding: '0 1rem' }}>
       {/* Categories Scroll Skeleton */}
-      <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'hidden', padding: '1rem 0' }}>
-        {[1, 2, 3, 4, 5].map(i => (
-          <Skeleton key={i} width={80} height={34} borderRadius={20} />
-        ))}
-      </div>
+      {!hideCategories && (
+        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'hidden', padding: '1rem 0' }}>
+          {[1, 2, 3, 4, 5].map(i => (
+            <Skeleton key={i} width={80} height={34} borderRadius={20} />
+          ))}
+        </div>
+      )}
 
       {/* Menu Items List Skeleton */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
