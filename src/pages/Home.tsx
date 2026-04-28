@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Heart, MapPin } from 'lucide-react';
 import type { RootState, AppDispatch } from '../store/store';
-import { selectBestsellers, selectComboItems, toggleOrderType } from '../store/menuSlice';
+import { toggleOrderType } from '../store/menuSlice';
 import ServiceSelectionModal from '../components/ServiceSelectionModal';
 import PromoBanner from '../components/PromoBanner';
 import SearchBar from '../components/SearchBar';
@@ -15,19 +15,26 @@ import CafeLogo from '../components/CafeLogo';
 import HomeSkeleton from '../components/HomeSkeleton';
 import AddAddressModal from '../components/AddAddressModal';
 import { API_URL } from '../lib/api';
+import { useMenu } from '../hooks/useMenu';
 
 export default function Home() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const [searchVal, setSearchVal] = useState('');
-  const bestsellers = useSelector(selectBestsellers);
-  const comboItems = useSelector(selectComboItems);
   const { orderType } = useSelector((state: RootState) => state.menu);
   const { user } = useSelector((state: RootState) => state.auth);
-  
+
+  // Use SWR for instant menu caching
+  const cafeId = 'apna-cafe-1';
+  const { menu, isLoading: menuLoading } = useMenu(cafeId);
+
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [activeAddress, setActiveAddress] = useState<any>(null);
+
+  // Derive sections from SWR menu
+  const bestsellers = menu.filter((i: any) => i.isBestseller);
+  const comboItems = menu.filter((i: any) => i.isCombo);
 
   // Initialize service modal if no order type is set
   useEffect(() => {
@@ -82,10 +89,8 @@ export default function Home() {
     }
   };
 
-  const menuLoading = useSelector((state: RootState) => state.menu.loading);
-
-  const categories = useSelector((state: RootState) => {
-    const cats = new Set(state.menu.items.filter((i: any) => !i.isCombo).map((i: any) => i.category));
+  const categories = useSelector(() => {
+    const cats = new Set(menu.filter((i: any) => !i.isCombo).map((i: any) => i.category));
     return ['all', ...Array.from(cats), 'combos'] as string[];
   });
 
@@ -190,7 +195,7 @@ export default function Home() {
                 <span className="section-title">🌟 Recommended</span>
               </div>
               <div className="grid-2">
-                {bestsellers.slice(0, 4).map(item => (
+                {bestsellers.slice(0, 4).map((item: any) => (
                   <MenuItemCard key={item.id} item={item} layout="grid" />
                 ))}
               </div>
@@ -205,7 +210,7 @@ export default function Home() {
                 <span className="section-link" onClick={() => navigate('/menu?cat=combos')}>See all</span>
               </div>
               <div className="combos-scroll">
-                {comboItems.slice(0, 5).map(combo => (
+                {comboItems.slice(0, 5).map((combo: any) => (
                   <div key={combo.id} className="combo-card-alt" onClick={() => navigate('/menu?cat=combos')}>
                     <img src={combo.imageUrl || '/assets/img-placeholder.svg'} alt={combo.name} loading="lazy" />
                     <div className="combo-info">
