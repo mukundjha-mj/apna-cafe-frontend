@@ -5,6 +5,10 @@ import * as Sentry from "@sentry/react";
 import { store } from './store/store'
 import './index.css'
 import App from './App.tsx'
+import { registerSW } from 'virtual:pwa-register'
+
+// Register Service Worker for PWA
+registerSW({ immediate: true })
 
 Sentry.init({
   dsn: "https://d2668aafba5e4bdb469711cd154fd43c@o4511298898952192.ingest.us.sentry.io/4511298901770240",
