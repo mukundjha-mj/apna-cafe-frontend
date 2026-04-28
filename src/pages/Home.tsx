@@ -13,6 +13,7 @@ import ViewCartBar from '../components/ViewCartBar';
 import { CategoryIcon } from '../components/CategoryIcons';
 import CafeLogo from '../components/CafeLogo';
 import HomeSkeleton from '../components/HomeSkeleton';
+import AddAddressModal from '../components/AddAddressModal';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -21,14 +22,66 @@ export default function Home() {
   const bestsellers = useSelector(selectBestsellers);
   const comboItems = useSelector(selectComboItems);
   const { orderType } = useSelector((state: RootState) => state.menu);
+  const { user } = useSelector((state: RootState) => state.auth);
+  
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [activeAddress, setActiveAddress] = useState<any>(null);
 
+  // Initialize service modal if no order type is set
   useEffect(() => {
     if (!orderType) {
       const timer = setTimeout(() => setIsServiceModalOpen(true), 500);
       return () => clearTimeout(timer);
     }
   }, [orderType]);
+
+  // Handle Delivery Address Auto-Select or Prompt
+  useEffect(() => {
+    const checkAddress = async () => {
+      if (orderType === 'DELIVERY') {
+        if (!user?.id) {
+          // If no user, just prompt or use local fallback if you want
+          // But for now, we expect a logged-in user to have an address
+          setIsAddressModalOpen(true);
+          return;
+        }
+
+        try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const res = await fetch(`${API_URL}/api/addresses/${user.id}`);
+          const data = await res.json();
+          if (data.success && data.data.length > 0) {
+            const defaultAddr = data.data.find((a: any) => a.isDefault) || data.data[0];
+            setActiveAddress(defaultAddr);
+          } else {
+            setIsAddressModalOpen(true);
+          }
+        } catch (err) {
+          console.error('Failed to fetch addresses', err);
+        }
+      }
+    };
+    checkAddress();
+  }, [orderType, user]);
+
+  const handleSaveAddress = async (newAddr: any) => {
+    if (!user?.id) return;
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${API_URL}/api/addresses/${user.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAddr)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActiveAddress(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to save address', err);
+    }
+  };
 
   const menuLoading = useSelector((state: RootState) => state.menu.loading);
 
@@ -54,6 +107,11 @@ export default function Home() {
         isOpen={isServiceModalOpen} 
         onClose={() => setIsServiceModalOpen(false)} 
       />
+      <AddAddressModal 
+        isOpen={isAddressModalOpen} 
+        onClose={() => setIsAddressModalOpen(false)}
+        onSave={handleSaveAddress}
+      />
 
       {/* BK Header Style */}
       <header className="bk-header">
@@ -77,13 +135,13 @@ export default function Home() {
         </div>
 
         {orderType === 'DELIVERY' && (
-          <div className="bk-location-bar" onClick={() => setIsServiceModalOpen(true)}>
+          <div className="bk-location-bar" onClick={() => activeAddress ? navigate('/saved-addresses') : setIsAddressModalOpen(true)}>
             <div className="bk-loc-left">
               <MapPin size={20} />
               <span className="bk-loc-label">DELIVER TO:</span>
             </div>
             <div className="bk-loc-input">
-              <span>Set Delivery Address...</span>
+              <span>{activeAddress ? `${activeAddress.type} - ${activeAddress.address}` : 'Set Delivery Address...'}</span>
             </div>
           </div>
         )}

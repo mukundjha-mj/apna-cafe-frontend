@@ -88,7 +88,7 @@ export default function Wallet() {
         <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '100px', height: '100px', background: 'rgba(59,130,246,0.1)', borderRadius: '50%', filter: 'blur(30px)' }}></div>
         
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: 0.8, fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', tracking: '0.1em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: 0.8, fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             <WalletIcon size={14} /> Total Balance
           </div>
           <div style={{ fontSize: '3rem', fontWeight: 900, marginTop: '0.5rem', display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>

@@ -19,7 +19,11 @@ import Wallet from './pages/Wallet';
 import CafeDashboard from './pages/CafeDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import SavedAddresses from './pages/SavedAddresses';
+import Contact from './pages/Contact';
+import HelpCenter from './pages/HelpCenter';
 import AuthModal from './components/AuthModal';
+import ScrollToTop from './components/ScrollToTop';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, initialized } = useSelector((state: RootState) => state.auth);
@@ -64,6 +68,7 @@ function AppContent() {
         onClose={() => dispatch(setAuthModalOpen(false))} 
         onSuccess={() => dispatch(setAuthModalOpen(false))}
       />
+      <ScrollToTop />
       
       <main>
         <Routes>
@@ -79,6 +84,9 @@ function AppContent() {
           <Route path="/order/:orderId" element={<ProtectedRoute><OrderStatus /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+          <Route path="/saved-addresses" element={<ProtectedRoute><SavedAddresses /></ProtectedRoute>} />
+          <Route path="/contact" element={<ProtectedRoute><Contact /></ProtectedRoute>} />
+          <Route path="/help" element={<ProtectedRoute><HelpCenter /></ProtectedRoute>} />
           
           {/* Checkout (has internal auth gate) */}
           <Route path="/checkout" element={<Checkout />} />
@@ -94,14 +102,6 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
 
-        {/* Footer for Google Verification */}
-        <footer className="app-footer">
-          <p>© 2026 Apna Cafe. All rights reserved.</p>
-          <div className="footer-links">
-            <Link to="/privacy">Privacy Policy</Link>
-            <Link to="/terms">Terms of Service</Link>
-          </div>
-        </footer>
       </main>
       {!hideNav && <BottomNav />}
     </div>
