@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Heart, MapPin } from 'lucide-react';
@@ -89,10 +89,10 @@ export default function Home() {
     }
   };
 
-  const categories = useSelector(() => {
+  const categories = useMemo(() => {
     const cats = new Set(menu.filter((i: any) => !i.isCombo).map((i: any) => i.category));
     return ['all', ...Array.from(cats), 'combos'] as string[];
-  });
+  }, [menu]);
 
   const categoryLabels: Record<string, string> = {
     all: 'All', combos: 'Combos', pizza: 'Pizza', burgers: 'Burgers', fries: 'Fries', momos: 'Momos', shakes: 'Shakes', drinks: 'Drinks', new: 'New Items',

@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'r
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from './store/store';
 import { initAuth, setAuthModalOpen } from './store/authSlice';
-import { fetchMenu } from './store/menuSlice';
 import BottomNav from './components/BottomNav';
 import SplashScreen from './components/SplashScreen';
 import ScrollToTop from './components/ScrollToTop';
@@ -66,7 +65,6 @@ function AppContent() {
 
   useEffect(() => {
     dispatch(initAuth());
-    dispatch(fetchMenu());
   }, [dispatch]);
 
   const hideNav = ['/cart', '/checkout', '/cafe/dashboard', '/my-profile'].some(p => location.pathname.startsWith(p))
