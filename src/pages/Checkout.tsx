@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Banknote, CreditCard, Utensils, ShoppingBag, Truck, Navigation, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Clock, Banknote, CreditCard, Utensils, ShoppingBag, Truck, Navigation, CheckCircle2, Wallet as WalletIcon } from 'lucide-react';
 import type { RootState, AppDispatch } from '../store/store';
 import { clearCart } from '../store/cartSlice';
 import { placeOrder } from '../store/ordersSlice';
@@ -26,11 +26,29 @@ export default function Checkout() {
   const [isLocating, setIsLocating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [useWallet, setUseWallet] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
 
   // Totals
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const deliveryFee = orderType === 'DELIVERY' ? 0 : 0; // Keeping fees 0 as per previous request
-  const total = subtotal + deliveryFee;
+  const deliveryFee = 0; 
+  const walletAmountToUse = useWallet ? Math.min(walletBalance, subtotal + deliveryFee) : 0;
+  const total = subtotal + deliveryFee - walletAmountToUse;
+
+  // Fetch wallet balance
+  useEffect(() => {
+    if (user?.id) {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      fetch(`${API_URL}/api/wallet/${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setWalletBalance(data.data.balance);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [user]);
 
   // Sync address from profile if exists
   useEffect(() => {
@@ -77,7 +95,7 @@ export default function Checkout() {
       subtotal,
       deliveryFee,
       serviceFee: 0,
-      discount: 0,
+      discount: walletAmountToUse,
       totalAmount: total,
       items: cartItems.map(item => ({
         menuItemId: item.id,
@@ -166,6 +184,25 @@ export default function Checkout() {
           </div>
         )}
 
+        {/* Wallet Balance */}
+        {walletBalance > 0 && (
+          <div className="checkout-section">
+            <h4 className="section-label">Wallet Rewards</h4>
+            <div className="wallet-card-checkout" onClick={() => setUseWallet(!useWallet)}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div className="wallet-icon-box"><WalletIcon size={18} /></div>
+                <div>
+                  <p className="wallet-title">Use Wallet Balance</p>
+                  <p className="wallet-balance-text">Available: ₹{walletBalance}</p>
+                </div>
+              </div>
+              <div className={`wallet-toggle ${useWallet ? 'active' : ''}`}>
+                <div className="toggle-dot"></div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Payment Methods */}
         <div className="checkout-section">
           <h4 className="section-label">Payment Method</h4>
@@ -203,6 +240,12 @@ export default function Checkout() {
               <div className="bill-row">
                 <span>Delivery Fee</span>
                 <span>₹{deliveryFee}</span>
+              </div>
+            )}
+            {walletAmountToUse > 0 && (
+              <div className="bill-row" style={{ color: '#22c55e' }}>
+                <span>Wallet Discount</span>
+                <span>-₹{walletAmountToUse}</span>
               </div>
             )}
             <div className="bill-row total">
@@ -363,6 +406,61 @@ export default function Checkout() {
           font-size: 0.75rem;
           color: var(--text-muted);
           padding-left: 0.25rem;
+        }
+        .wallet-card-checkout {
+          background: var(--bg-card);
+          border: 1px solid rgba(34, 197, 94, 0.2);
+          padding: 1rem;
+          border-radius: var(--radius-lg);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+        .wallet-icon-box {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: rgba(34, 197, 94, 0.1);
+          color: #22c55e;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .wallet-title {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: var(--text-cream);
+        }
+        .wallet-balance-text {
+          font-size: 0.7rem;
+          color: #22c55e;
+          font-weight: 600;
+        }
+        .wallet-toggle {
+          width: 44px;
+          height: 24px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.1);
+          position: relative;
+          transition: all 0.3s;
+        }
+        .wallet-toggle.active {
+          background: #22c55e;
+        }
+        .toggle-dot {
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: white;
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          transition: all 0.3s;
+        }
+        .wallet-toggle.active .toggle-dot {
+          left: 23px;
         }
       `}</style>
       <OrderSuccessModal

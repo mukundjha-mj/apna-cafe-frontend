@@ -15,6 +15,7 @@ import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import OrderStatus from './pages/OrderStatus';
 import Profile from './pages/Profile';
+import Wallet from './pages/Wallet';
 import CafeDashboard from './pages/CafeDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
@@ -77,6 +78,7 @@ function AppContent() {
           <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
           <Route path="/order/:orderId" element={<ProtectedRoute><OrderStatus /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
           
           {/* Checkout (has internal auth gate) */}
           <Route path="/checkout" element={<Checkout />} />

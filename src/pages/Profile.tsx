@@ -2,18 +2,18 @@ import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from '../store/store';
 import { logoutUser } from '../store/authSlice';
 import { useNavigate } from 'react-router-dom';
-import { User, MapPin, CreditCard, UserPlus, Globe, Phone, HelpCircle, FileText, Shield, Info, ChevronRight, LogOut } from 'lucide-react';
+import { User, MapPin, CreditCard, UserPlus, Globe, Phone, HelpCircle, FileText, Shield, Info, ChevronRight, LogOut, Wallet } from 'lucide-react';
 
 const profileMenuItems = [
-  { icon: MapPin, label: 'Saved Addresses', color: '#FF7622' },
-  { icon: CreditCard, label: 'Payment Methods', color: '#3b82f6' },
-  { icon: UserPlus, label: 'Invite Friends', color: '#22C55E' },
-  { icon: Globe, label: 'Language', value: 'English', color: '#8b5cf6' },
-  { icon: Phone, label: 'Contact us', color: '#f59e0b' },
-  { icon: HelpCircle, label: 'Help Center', color: '#06b6d4' },
-  { icon: FileText, label: 'Term of Service', color: '#64748b' },
-  { icon: Shield, label: 'Privacy Policy', color: '#ec4899' },
-  { icon: Info, label: 'About App', color: '#6366f1' },
+  { icon: Wallet, label: 'My Wallet', color: '#FF7622', path: '/wallet' },
+  { icon: MapPin, label: 'Saved Addresses', color: '#3b82f6' },
+  { icon: CreditCard, label: 'Payment Methods', color: '#22C55E' },
+  { icon: UserPlus, label: 'Invite Friends', color: '#8b5cf6', path: '/wallet' },
+  { icon: Globe, label: 'Language', value: 'English', color: '#f59e0b' },
+  { icon: Phone, label: 'Contact us', color: '#06b6d4' },
+  { icon: HelpCircle, label: 'Help Center', color: '#64748b' },
+  { icon: FileText, label: 'Term of Service', color: '#ec4899' },
+  { icon: Shield, label: 'Privacy Policy', color: '#6366f1' },
 ];
 
 export default function Profile() {
@@ -42,7 +42,7 @@ export default function Profile() {
       <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius-lg)', padding: '0 1rem', boxShadow: 'var(--shadow-sm)', marginBottom: '1rem' }}>
         <ul className="profile-list">
           {profileMenuItems.map(item => (
-            <li key={item.label} className="profile-list-item">
+            <li key={item.label} className="profile-list-item" onClick={() => item.path && navigate(item.path)}>
               <div className="profile-list-left">
                 <div className="profile-list-icon" style={{ background: `${item.color}15`, color: item.color }}><item.icon size={18} /></div>
                 <span className="profile-list-text">{item.label}</span>
