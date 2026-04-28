@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'assets/*.png', 'assets/*.jpg'],
+      includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Apna Cafe',
         short_name: 'ApnaCafe',
