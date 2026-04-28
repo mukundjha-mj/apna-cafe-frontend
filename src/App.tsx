@@ -7,25 +7,46 @@ import BottomNav from './components/BottomNav';
 import SplashScreen from './components/SplashScreen';
 import ScrollToTop from './components/ScrollToTop';
 
+// Helper to handle chunk load errors by reloading the page
+const lazyWithRetry = (componentImport: () => Promise<any>) => 
+  lazy(async () => {
+    const pageHasAlreadyBeenReloaded = JSON.parse(
+      window.sessionStorage.getItem('page-has-been-reloaded') || 'false'
+    );
+
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem('page-has-been-reloaded', 'false');
+      return component;
+    } catch (error) {
+      if (!pageHasAlreadyBeenReloaded) {
+        window.sessionStorage.setItem('page-has-been-reloaded', 'true');
+        window.location.reload();
+        return { default: () => null };
+      }
+      throw error;
+    }
+  });
+
 // Lazy load pages for better initial performance
-const Home = lazy(() => import('./pages/Home'));
-const SearchPage = lazy(() => import('./pages/Search'));
-const Menu = lazy(() => import('./pages/Menu'));
-const Favorites = lazy(() => import('./pages/Favorites'));
-const Cart = lazy(() => import('./pages/Cart'));
-const Checkout = lazy(() => import('./pages/Checkout'));
-const Orders = lazy(() => import('./pages/Orders'));
-const OrderStatus = lazy(() => import('./pages/OrderStatus'));
-const Profile = lazy(() => import('./pages/Profile'));
-const MyProfile = lazy(() => import('./pages/MyProfile'));
-const Wallet = lazy(() => import('./pages/Wallet'));
-const CafeDashboard = lazy(() => import('./pages/CafeDashboard'));
-const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
-const TermsOfService = lazy(() => import('./pages/TermsOfService'));
-const SavedAddresses = lazy(() => import('./pages/SavedAddresses'));
-const Contact = lazy(() => import('./pages/Contact'));
-const HelpCenter = lazy(() => import('./pages/HelpCenter'));
-const AuthModal = lazy(() => import('./components/AuthModal'));
+const Home = lazyWithRetry(() => import('./pages/Home'));
+const SearchPage = lazyWithRetry(() => import('./pages/Search'));
+const Menu = lazyWithRetry(() => import('./pages/Menu'));
+const Favorites = lazyWithRetry(() => import('./pages/Favorites'));
+const Cart = lazyWithRetry(() => import('./pages/Cart'));
+const Checkout = lazyWithRetry(() => import('./pages/Checkout'));
+const Orders = lazyWithRetry(() => import('./pages/Orders'));
+const OrderStatus = lazyWithRetry(() => import('./pages/OrderStatus'));
+const Profile = lazyWithRetry(() => import('./pages/Profile'));
+const MyProfile = lazyWithRetry(() => import('./pages/MyProfile'));
+const Wallet = lazyWithRetry(() => import('./pages/Wallet'));
+const CafeDashboard = lazyWithRetry(() => import('./pages/CafeDashboard'));
+const PrivacyPolicy = lazyWithRetry(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazyWithRetry(() => import('./pages/TermsOfService'));
+const SavedAddresses = lazyWithRetry(() => import('./pages/SavedAddresses'));
+const Contact = lazyWithRetry(() => import('./pages/Contact'));
+const HelpCenter = lazyWithRetry(() => import('./pages/HelpCenter'));
+const AuthModal = lazyWithRetry(() => import('./components/AuthModal'));
 
 // Loading component for Suspense
 const PageLoader = () => (

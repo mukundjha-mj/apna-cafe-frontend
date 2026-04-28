@@ -25,8 +25,7 @@ export default function Home() {
   const { user } = useSelector((state: RootState) => state.auth);
 
   // Use SWR for instant menu caching
-  const cafeId = 'apna-cafe-1';
-  const { menu, isLoading: menuLoading } = useMenu(cafeId);
+  const { menu, isLoading: menuLoading } = useMenu();
 
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);

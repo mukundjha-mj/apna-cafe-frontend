@@ -1,10 +1,22 @@
 import useSWR from 'swr';
-import { fetchMenuItems } from '../lib/api';
+import { fetchAllCafes, fetchMenuItems } from '../lib/api';
 
-export function useMenu(cafeId: string) {
+const fetchMenuData = async () => {
+  // 1. Get the first cafe automatically
+  const cafes = await fetchAllCafes();
+  if (!cafes || cafes.length === 0) {
+    throw new Error('No cafe found');
+  }
+  const cafeId = cafes[0].id;
+
+  // 2. Fetch its menu
+  return fetchMenuItems(cafeId);
+};
+
+export function useMenu() {
   const { data, error, isLoading, mutate } = useSWR(
-    cafeId ? `/menu?cafeId=${cafeId}` : null,
-    () => fetchMenuItems(cafeId),
+    '/menu/auto-fetch',
+    fetchMenuData,
     {
       revalidateOnFocus: false,
       dedupingInterval: 60000, // 1 minute cache
