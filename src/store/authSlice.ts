@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '../lib/supabaseClient';
+import { syncUserProfile } from '../lib/api';
 
 interface User {
   id: string;
@@ -31,18 +32,21 @@ export const initAuth = createAsyncThunk('auth/init', async () => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return null;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', session.user.id)
-    .single();
-
-  return {
+  const userData = {
     id: session.user.id,
-    name: profile?.name || session.user.user_metadata?.name || '',
+    name: session.user.user_metadata?.name || '',
     email: session.user.email || '',
-    phone: profile?.phone || session.user.user_metadata?.phone || '',
-  } as User;
+    phone: session.user.user_metadata?.phone || '',
+  };
+
+  // Sync with PostgreSQL
+  try {
+    await syncUserProfile(userData);
+  } catch (err) {
+    console.error('Failed to sync profile:', err);
+  }
+
+  return userData as User;
 });
 
 // Login with email/password
@@ -53,18 +57,21 @@ export const loginUser = createAsyncThunk(
     if (error) return rejectWithValue(error.message);
 
     const user = data.user;
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    return {
+    const userData = {
       id: user.id,
-      name: profile?.name || user.user_metadata?.name || '',
+      name: user.user_metadata?.name || '',
       email: user.email || '',
-      phone: profile?.phone || user.user_metadata?.phone || '',
-    } as User;
+      phone: user.user_metadata?.phone || '',
+    };
+
+    // Sync with PostgreSQL
+    try {
+      await syncUserProfile(userData);
+    } catch (err) {
+      console.error('Failed to sync profile during login:', err);
+    }
+
+    return userData as User;
   }
 );
 
@@ -85,12 +92,21 @@ export const signupUser = createAsyncThunk(
     if (error) return rejectWithValue(error.message);
     if (!data.user) return rejectWithValue('Signup failed');
 
-    return {
+    const userData = {
       id: data.user.id,
       name,
       email: data.user.email || email,
       phone,
-    } as User;
+    };
+
+    // Sync with PostgreSQL
+    try {
+      await syncUserProfile(userData);
+    } catch (err) {
+      console.error('Failed to sync profile during signup:', err);
+    }
+
+    return userData as User;
   }
 );
 

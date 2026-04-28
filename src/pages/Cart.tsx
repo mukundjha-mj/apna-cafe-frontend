@@ -6,7 +6,7 @@ import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { selectBestsellers } from '../store/menuSlice';
 import MenuItemCard from '../components/MenuItemCard';
 
-export default function Cart() {
+const Cart = () => {
   const cartItems = useSelector((state: RootState) => state.cart.items);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -54,7 +54,7 @@ export default function Cart() {
       <div className="stack" style={{ marginBottom: '1.25rem' }}>
         {cartItems.map(item => (
           <div key={`${item.id}-${item.size || ''}`} style={{ display: 'flex', gap: '0.75rem', padding: '0.75rem', background: 'var(--bg-white)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
-            {item.image && <img src={item.image} alt={item.name} style={{ width: 75, height: 75, borderRadius: 'var(--radius-md)', objectFit: 'cover', flexShrink: 0 }} />}
+            {item.imageUrl && <img src={item.imageUrl} alt={item.name} style={{ width: 75, height: 75, borderRadius: 'var(--radius-md)', objectFit: 'cover', flexShrink: 0 }} />}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
               <div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
@@ -97,4 +97,6 @@ export default function Cart() {
       </div>
     </div>
   );
-}
+};
+
+export default Cart;

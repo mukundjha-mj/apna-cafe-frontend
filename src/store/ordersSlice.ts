@@ -14,6 +14,7 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
+  orderNumber: number;
   userId: string;
   cafeId: string;
   status: string;

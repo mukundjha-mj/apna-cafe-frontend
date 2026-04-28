@@ -98,7 +98,7 @@ export default function CafeDashboard() {
               <div key={order.id} style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius-lg)', padding: '1rem', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Order #{order.id.slice(0, 8)}</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Order #{order.orderNumber || order.id.slice(0, 8)}</div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--typo-200)' }}>
                       {new Date(order.createdAt).toLocaleTimeString()} • 
                       ₹{order.totalAmount} 

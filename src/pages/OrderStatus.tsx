@@ -43,7 +43,7 @@ export default function OrderStatus() {
     socket.on('connect', () => {
       socket.emit('join-order-room', orderId);
     });
-    socket.on('order-update', (updatedOrder: any) => {
+    socket.on('order-updated', (updatedOrder: any) => {
       dispatch(updateOrderInList(updatedOrder));
     });
     return () => { socket.disconnect(); };
@@ -65,7 +65,7 @@ export default function OrderStatus() {
         <div className="status-content">
           <div className="order-id-card">
             <span className="label">Order ID</span>
-            <span className="value">#{(orderId || '').slice(0, 8).toUpperCase()}</span>
+            <span className="value">#{activeOrder?.orderNumber || (orderId || '').slice(0, 8).toUpperCase()}</span>
           </div>
 
           <div className="steps-card">

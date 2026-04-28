@@ -150,7 +150,7 @@ export default function Home() {
               <div className="combos-scroll">
                 {comboItems.slice(0, 5).map(combo => (
                   <div key={combo.id} className="combo-card-alt" onClick={() => navigate('/menu?cat=combos')}>
-                    <img src={combo.image} alt={combo.name} loading="lazy" />
+                    <img src={combo.imageUrl || '/assets/img-placeholder.svg'} alt={combo.name} loading="lazy" />
                     <div className="combo-info">
                       <div className="combo-name">{combo.name}</div>
                       <div className="combo-contents">{combo.comboContents}</div>

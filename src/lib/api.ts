@@ -71,4 +71,10 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
   return data.data;
 };
 
+// ==================== PROFILES ====================
+export const syncUserProfile = async (profileData: { id: string; name: string; email: string; phone?: string }) => {
+  const { data } = await api.post('/profiles/sync', profileData);
+  return data.data;
+};
+
 export default api;

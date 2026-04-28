@@ -6,7 +6,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   cafeId: string;
-  image?: string;
+  imageUrl?: string;
   size?: string;
 }
 

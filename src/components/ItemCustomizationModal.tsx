@@ -36,7 +36,7 @@ export default function ItemCustomizationModal({ item, isOpen, onClose }: ItemCu
       price: currentSizePrice,
       quantity: quantity,
       cafeId: item.cafeId,
-      image: item.image,
+      imageUrl: item.imageUrl,
       size: selectedSize || undefined,
     }));
     onClose();
@@ -48,7 +48,7 @@ export default function ItemCustomizationModal({ item, isOpen, onClose }: ItemCu
         <button className="custom-close-btn" onClick={onClose}><X size={20} /></button>
         
         <div className="custom-modal-header">
-          <img src={item.image} alt={item.name} className="custom-item-img" />
+          <img src={item.imageUrl} alt={item.name} className="custom-item-img" />
           <div className="custom-item-info">
             <div className="veg-non-veg-badge">
               <div className={`diet-icon ${item.isVeg ? 'veg' : 'non-veg'}`}>
@@ -108,40 +108,42 @@ export default function ItemCustomizationModal({ item, isOpen, onClose }: ItemCu
         .custom-modal-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.7);
-          z-index: 1000;
+          background: rgba(0, 0, 0, 0.85);
+          z-index: 9999;
           display: flex;
-          align-items: flex-end;
+          align-items: center;
           justify-content: center;
-          backdrop-filter: blur(4px);
+          backdrop-filter: blur(8px);
+          padding: 1.5rem;
         }
         .custom-modal-content {
           background: #FFFFFF;
           width: 100%;
-          max-width: 500px;
-          border-radius: 24px 24px 0 0;
-          padding: 1.5rem;
+          max-width: 400px;
+          border-radius: 28px;
+          padding: 1.75rem;
           position: relative;
-          animation: slideUp 0.3s ease-out;
+          animation: modalScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
           color: #2D2D2D;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
-        @keyframes slideUp {
-          from { transform: translateY(100%); }
-          to { transform: translateY(0); }
+        @keyframes modalScale {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
         }
         .custom-close-btn {
           position: absolute;
-          top: -60px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #FFFFFF;
+          top: 1rem;
+          right: 1rem;
+          background: #F5F5F5;
           border-radius: 50%;
-          width: 40px;
-          height: 40px;
+          width: 32px;
+          height: 32px;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          z-index: 10;
+          color: #666;
         }
         .custom-modal-header {
           display: flex;

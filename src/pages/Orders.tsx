@@ -67,7 +67,7 @@ export default function Orders() {
               <div key={order.id} className="order-card" id={`order-${order.id}`} onClick={() => navigate(`/order/${order.id}`)} style={{ cursor: 'pointer' }}>
                 <div className="order-card-header">
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>#{order.id.slice(0, 8)}</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>#{order.orderNumber || order.id.slice(0, 8)}</div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--typo-200)' }}>{dateStr}</div>
                   </div>
                   <span className="order-card-status" style={{ background: sc.bg, color: sc.color }}>{statusLabels[order.status] || order.status}</span>

@@ -56,7 +56,7 @@ export default function MenuItemCard({ item, layout = 'list' }: MenuItemCardProp
       <>
         <div className="grid-card" onClick={() => setIsCustomizing(true)}>
           <div className="grid-card-img-container">
-            <img src={item.image} alt={item.name} className="grid-card-img" loading="lazy" />
+            <img src={item.imageUrl || '/assets/img-placeholder.svg'} alt={item.name} className="grid-card-img" loading="lazy" />
             <button 
               onClick={(e) => { e.stopPropagation(); dispatch(toggleFavorite(item.id)); }} 
               className="fav-btn-overlay"
@@ -94,7 +94,7 @@ export default function MenuItemCard({ item, layout = 'list' }: MenuItemCardProp
     <>
       <div className="menu-card" onClick={() => setIsCustomizing(true)}>
         <div className="menu-card-img-wrapper">
-          <img src={item.image} alt={item.name} className="menu-card-img" loading="lazy" />
+          <img src={item.imageUrl || '/assets/img-placeholder.svg'} alt={item.name} className="menu-card-img" loading="lazy" />
           <div className="veg-indicator-card">
             <div className={`diet-icon-mini ${item.isVeg ? 'veg' : 'non-veg'}`}>
               <div className="diet-dot-mini" />

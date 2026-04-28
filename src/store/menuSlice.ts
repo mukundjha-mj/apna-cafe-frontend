@@ -1,23 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import { fetchAllCafes, fetchMenuItems } from '../lib/api';
 
-// Image mapping: DB stores keys like "pizza", frontend maps to local assets
-import pizzaImg from '../assets/food/pizza.png';
-import burgerImg from '../assets/food/burger.png';
-import friesImg from '../assets/food/fries.png';
-import momosImg from '../assets/food/momos.png';
-import shakesImg from '../assets/food/shakes.png';
-import comboImg from '../assets/food/combo.png';
-
-const imageMap: Record<string, string> = {
-  pizza: pizzaImg,
-  burger: burgerImg,
-  fries: friesImg,
-  momos: momosImg,
-  shakes: shakesImg,
-  combo: comboImg,
-};
-
 export interface MenuItemSize {
   label: string;
   price: number;
@@ -31,8 +14,7 @@ export interface MenuItem {
   category: string;
   price: number;
   sizes?: MenuItemSize[] | null;
-  image: string;        // resolved local image path
-  imageUrl: string;     // raw key from DB
+  imageUrl: string;
   isVeg: boolean;
   isNew: boolean;
   isBestseller: boolean;
@@ -61,12 +43,6 @@ const initialState: MenuState = {
   error: null,
 };
 
-// Resolve image key to local asset path
-function resolveImage(imageUrl: string | null): string {
-  if (!imageUrl) return pizzaImg;
-  return imageMap[imageUrl] || pizzaImg;
-}
-
 // Fetch menu: first get the cafe, then its menu items
 export const fetchMenu = createAsyncThunk('menu/fetchMenu', async () => {
   // Get the first cafe (single-cafe app)
@@ -88,8 +64,7 @@ export const fetchMenu = createAsyncThunk('menu/fetchMenu', async () => {
     category: item.category,
     price: item.price,
     sizes: item.sizes || null,
-    image: resolveImage(item.imageUrl),
-    imageUrl: item.imageUrl || '',
+    imageUrl: item.imageUrl || '/assets/img-placeholder.svg',
     isVeg: item.isVeg,
     isNew: item.isNew || false,
     isBestseller: item.isBestseller || false,
