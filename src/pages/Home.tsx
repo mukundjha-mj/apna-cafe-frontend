@@ -227,7 +227,22 @@ export default function Home() {
 
       <ViewCartBar />
 
+      {/* Footer for Google Verification */}
+      <footer style={{ padding: '2rem 1rem', textAlign: 'center', marginTop: 'auto', marginBottom: '0', borderTop: '1px dashed rgba(255,255,255,0.05)' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.5rem' }}>&copy; {new Date().getFullYear()} Apna Cafe. All rights reserved.</p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+          <a href="/privacy" style={{ color: 'var(--primary)', fontSize: '0.8rem', textDecoration: 'none' }}>Privacy Policy</a>
+          <a href="/terms" style={{ color: 'var(--primary)', fontSize: '0.8rem', textDecoration: 'none' }}>Terms of Service</a>
+        </div>
+      </footer>
+
       <style>{`
+        #home-page {
+          display: flex;
+          flex-direction: column;
+          min-height: calc(100vh - var(--bottom-nav-height));
+          padding-bottom: 0;
+        }
         .bk-header {
           background: #120A06; /* Even darker espresso */
           padding: 1rem 1rem 1.25rem;
